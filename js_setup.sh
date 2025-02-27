@@ -1,12 +1,12 @@
 #!/bin/bash
 
-# AdaptivePerfHTML: Tool for producing HTML summary of profiling results
+# Adaptyst Analyser: a tool for analysing performance analysis results
 # Copyright (C) CERN. See LICENSE for details.
 
 set -e
 
 PROJ_DIR=$(pwd)
-TMP_DIR=/tmp/adaptiveperfhtml.setup.$$
+TMP_DIR=/tmp/adaptyst-analyser.setup.$$
 
 function error() {
     echo "====="
@@ -15,7 +15,7 @@ function error() {
     echo "Unless you've interrupted this script, this should not happen."
     echo "Make sure that npm is installed in your computer."
     echo ""
-    echo "If the issue reoccurs, contact the AdaptivePerfHTML developers."
+    echo "If the issue reoccurs, contact the Adaptyst Analyser developers."
     echo "They may ask you to look at the contents of the temporary directory."
     echo "If so, look inside $TMP_DIR."
     echo "====="
@@ -24,10 +24,10 @@ function error() {
 
 trap "error" ERR
 
-if [[ ! -d $PROJ_DIR/src/adaptiveperf/static ]]; then
+if [[ ! -d $PROJ_DIR/src/adaptystanalyser/static ]]; then
     echo "====="
-    echo "$PROJ_DIR/src/adaptiveperf/static does not exist!"
-    echo "Run this script from the root folder of the AdaptivePerfHTML repository."
+    echo "$PROJ_DIR/src/adaptystanalyser/static does not exist!"
+    echo "Run this script from the root folder of the Adaptyst Analyser repository."
     echo "====="
     exit 1
 fi
@@ -37,7 +37,7 @@ if [[ ! -d $PROJ_DIR/d3-flame-graph ]]; then
     echo "$PROJ_DIR/d3-flame-graph does not exist!"
     echo ""
     echo "Run \"git submodule update --init --force\", followed by running this"
-    echo "script from the root folder of the AdaptivePerfHTML repository."
+    echo "script from the root folder of the Adaptyst Analyser repository."
     echo "====="
     exit 1
 fi
@@ -50,15 +50,15 @@ cd $TMP_DIR
 npm init --yes
 npm install --install-links $PROJ_DIR/d3-flame-graph
 npm install function-plot @highlightjs/cdn-assets highlightjs-line-numbers.js
-cp node_modules/*/dist/*.min.js node_modules/*/dist/*.css $PROJ_DIR/src/adaptiveperf/static
-cp node_modules/function-plot/dist/function-plot.js $PROJ_DIR/src/adaptiveperf/static
-cp node_modules/@highlightjs/cdn-assets/highlight.min.js $PROJ_DIR/src/adaptiveperf/static
-cp node_modules/@highlightjs/cdn-assets/styles/default.min.css $PROJ_DIR/src/adaptiveperf/static/highlightjs.css
+cp node_modules/*/dist/*.min.js node_modules/*/dist/*.css $PROJ_DIR/src/adaptystanalyser/static
+cp node_modules/function-plot/dist/function-plot.js $PROJ_DIR/src/adaptystanalyser/static
+cp node_modules/@highlightjs/cdn-assets/highlight.min.js $PROJ_DIR/src/adaptystanalyser/static
+cp node_modules/@highlightjs/cdn-assets/styles/default.min.css $PROJ_DIR/src/adaptystanalyser/static/highlightjs.css
 npm install vis-timeline@7.7.3
-cp node_modules/vis-timeline/standalone/umd/vis-timeline-graph2d.min.js node_modules/vis-timeline/styles/vis-timeline-graph2d.min.css $PROJ_DIR/src/adaptiveperf/static
+cp node_modules/vis-timeline/standalone/umd/vis-timeline-graph2d.min.js node_modules/vis-timeline/styles/vis-timeline-graph2d.min.css $PROJ_DIR/src/adaptystanalyser/static
 
 echo "====="
-echo "Done! You can install AdaptivePerfHTML now."
+echo "Done! You can install Adaptyst Analyser now."
 echo "If you get an error below about deleting the temporary directory, you can ignore it."
 echo "====="
 

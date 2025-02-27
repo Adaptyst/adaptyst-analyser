@@ -1,4 +1,4 @@
-# AdaptivePerfHTML: Tool for producing HTML summary of profiling results
+# Adaptyst Analyser: a tool for analysing performance analysis results
 # Copyright (C) CERN. See LICENSE for details.
 
 import subprocess
