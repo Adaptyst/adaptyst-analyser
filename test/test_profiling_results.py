@@ -1,11 +1,11 @@
-# AdaptivePerfHTML: Tool for producing HTML summary of profiling results
+# Adaptyst Analyser: a tool for analysing performance analysis results
 # Copyright (C) CERN. See LICENSE for details.
 
 import pytest
 import json
 from pathlib import Path
 from treelib import Tree
-from adaptiveperf import ProfilingResults, Identifier
+from adaptystanalyser import ProfilingResults, Identifier
 
 
 @pytest.fixture()
@@ -39,7 +39,7 @@ def test_get_all_ids(tmp_path):
 
 @pytest.mark.skip(reason="File format has changed, needs reimplementing")
 def test_init_no_error():
-    ProfilingResults(str(Path(__file__).parent / 'adaptiveperf_results'),
+    ProfilingResults(str(Path(__file__).parent / 'adaptyst_results'),
                      '2023_12_21_12_49_57_test-device a.out')
 
 
@@ -92,7 +92,7 @@ def test_get_json_tree_only_root(results_dir_and_identifier, mocker):
 @pytest.mark.skip(reason="File format has changed, needs reimplementing")
 def test_get_json_tree():
     results = ProfilingResults(str(Path(__file__).parent /
-                                   'adaptiveperf_results'),
+                                   'adaptyst_results'),
                                '2023_12_21_12_49_57_test-device a.out')
 
     json_tree = results.get_json_tree()

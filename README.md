@@ -1,8 +1,8 @@
-# AdaptivePerfHTML
+# Adaptyst Analyser
 [![License: GNU GPL v3](https://img.shields.io/badge/license-GNU%20GPL%20v3-blue)]()
 [![Version: 0.1.dev](https://img.shields.io/badge/version-0.1.dev-red)]()
 
-A tool for producing the HTML summary of profiling results returned e.g. by AdaptivePerf.
+A tool for analysing performance analysis results returned e.g. by Adaptyst.
 
 ## Disclaimer
 This is currently a dev version and the tool is under active development. Bugs are to be expected (with the test coverage to be expanded soon). Use at your own risk!
@@ -16,40 +16,40 @@ The project is distributed under the GNU GPL v3 license. See LICENSE for details
 
 ## Installation
 ### Requirements
-Python 3.6 or newer. Also, you must have npm and Node.js 18 or newer during the installation process (you will not need these later). All other dependencies are installed automatically when setting up AdaptivePerfHTML.
+Python 3.6 or newer. Also, you must have npm and Node.js 18 or newer during the installation process (you will not need these later). All other dependencies are installed automatically when setting up Adaptyst Analyser.
 
 ### Setup
 This is a Python package, so you can install it with ```pip```:
 ```
-pip install git+https://github.com/AdaptivePerf/AdaptivePerfHTML
+pip install git+https://github.com/Adaptyst/adaptyst-analyser
 ```
 
 #### Windows
-At the moment, AdaptivePerfHTML can be installed only on Unix-like systems such as Linux and macOS. Because these should also include [WSL (Windows Subsystem for Linux)](https://learn.microsoft.com/en-us/windows/wsl/install), you should still be able to use the tool on Windows, with extra steps needed to set up WSL.
+At the moment, Adaptyst Analyser can be installed only on Unix-like systems such as Linux and macOS. Because these should also include [WSL (Windows Subsystem for Linux)](https://learn.microsoft.com/en-us/windows/wsl/install), you should still be able to use the tool on Windows, with extra steps needed to set up WSL.
 
 ## How to use
-The web server can be started by running ```adaptiveperfhtml <path to results>```, where ```<path to results>``` is the path to a results directory created e.g. by AdaptivePerf. For configuration options, see ```adaptiveperfhtml --help```.
+The web server can be started by running ```adaptyst-analyser <path to results>```, where ```<path to results>``` is the path to a results directory created e.g. by Adaptyst. For configuration options, see ```adaptyst-analyser --help```.
 
-When ```adaptiveperfhtml``` is run, look out for an output line similar to this:
+When ```adaptyst-analyser``` is run, look out for an output line similar to this:
 ```
 [2024-10-12 13:57:52 +0200] [2192] [INFO] Listening at: http://127.0.0.1:8000 (2192)
 ```
 
 The address points to the website where you can browse your profiling results.
 
-Under the hood, Gunicorn and [Flask](https://flask.palletsprojects.com) are used (set up automatically when installing AdaptivePerfHTML).
+Under the hood, Gunicorn and [Flask](https://flask.palletsprojects.com) are used (set up automatically when installing Adaptyst Analyser).
 
-If you prefer not to use ```adaptiveperfhtml``` or you cannot use it, set the ```FLASK_PROFILING_STORAGE``` environment variable to the path to a results directory and start the ```adaptiveperf.app:app``` Flask app using a method of your choice.
+If you prefer not to use ```adaptyst-analyser``` or you cannot use it, set the ```FLASK_PROFILING_STORAGE``` environment variable to the path to a results directory and start the ```adaptystanalyser.app:app``` Flask app using a method of your choice.
 
 ### Off-CPU timeline sampling
-If you have a profiling session with a huge number of off-CPU regions, rendering the timeline may become resource- and time-consuming for a web browser. In this case, you may want to enable off-CPU timeline sampling which samples captured off-CPU regions in a similar way AdaptivePerf samples off-CPU activity during profiling. This can be done by running ```adaptiveperfhtml -o <sampling period in ms> <path to results>``` or setting the ```FLASK_OFFCPU_SAMPLING``` environment variable to your sampling period in ms in case you don't use ```adaptiveperfhtml```.
+If you have a profiling session with a huge number of off-CPU regions, rendering the timeline may become resource- and time-consuming for a web browser. In this case, you may want to enable off-CPU timeline sampling which samples captured off-CPU regions in a similar way Adaptyst samples off-CPU activity during profiling. This can be done by running ```adaptyst-analyser -o <sampling period in ms> <path to results>``` or setting the ```FLASK_OFFCPU_SAMPLING``` environment variable to your sampling period in ms in case you don't use ```adaptyst-analyser```.
 
 This mechanism is **disabled** by default, meaning that all captured off-CPU regions are shown. The setting can be changed only on the server side, but moving it to the client side is planned to be done soon.
 
-### Using results from other programs than AdaptivePerf
-While AdaptivePerfHTML is designed with AdaptivePerf in mind, it can be used with any other profiler which produces result files in the AdaptivePerf format.
+### Using results from other programs than Adaptyst
+While Adaptyst Analyser is designed with Adaptyst in mind, it can be used with any other profiler which produces result files in the Adaptyst format.
 
-You can check the source code of AdaptivePerf for learning how it formats its profiling results.
+You can check the source code of Adaptyst for learning how it formats its profiling results.
 
 ## Website layout
 After opening the website, follow this getting started guide:
@@ -74,12 +74,12 @@ Python:
 * [pytest-mock](https://github.com/pytest-dev/pytest-mock)
 
 JavaScript:
-* [d3-flame-graph](https://github.com/AdaptivePerf/d3-flame-graph) (patched and stored in the AdaptivePerf org)
+* [d3-flame-graph](https://github.com/Adaptyst/d3-flame-graph) (patched and stored in the Adaptyst org)
 * [highlight.js](https://highlightjs.org)
 * [highlightjs-line-numbers.js](https://github.com/wcoder/highlightjs-line-numbers.js)
 * [function-plot](https://mauriciopoppe.github.io/function-plot)
 * [vis-timeline](https://github.com/visjs/vis-timeline)
 
 ## Acknowledgements
-The AdaptivePerfHTML development is possible thanks to the following funding sources:
+The Adaptyst Analyser development is possible thanks to the following funding sources:
 * The European Union HE research and innovation programme, grant agreement No 101092877 (SYCLOPS).

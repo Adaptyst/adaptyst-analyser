@@ -3,12 +3,12 @@ requires = ["hatchling", "hatch-vcs"]
 build-backend = "hatchling.build"
 
 [project]
-name = "adaptiveperf-html"
+name = "adaptyst-analyser"
 dynamic = ["version"]
 authors = [
   { name="Maksymilian Graczyk", email="maksymilian.graczyk@cern.ch" },
 ]
-description = "HTML summary producer for profiling results returned e.g. by AdaptivePerf"
+description = "A tool for analysing performance analysis results returned e.g. by Adaptyst"
 requires-python = ">=3.6"
 dependencies = [
   "Jinja2",
@@ -24,17 +24,17 @@ classifiers = [
 ]
 
 [project.scripts]
-adaptiveperfhtml = "adaptiveperf.cli:main"
+adaptyst-analyser = "adaptystanalyser.cli:main"
 
 [tool.hatch.version]
 source = "vcs"
 
 [tool.hatch.build.targets.wheel]
-only-include = ["src/adaptiveperf"]
+only-include = ["src/adaptystanalyser"]
 sources = ["src"]
 
 [tool.hatch.build.targets.sdist]
-only-include = ["src/adaptiveperf"]
+only-include = ["src/adaptystanalyser"]
 sources = ["src"]
 
 [tool.hatch.build.hooks.custom]

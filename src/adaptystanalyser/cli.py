@@ -1,4 +1,4 @@
-# AdaptivePerfHTML: Tool for producing HTML summary of profiling results
+# Adaptyst Analyser: a tool for analysing performance analysis results
 # Copyright (C) CERN. See LICENSE for details.
 
 import argparse
@@ -9,8 +9,8 @@ from pathlib import Path
 
 
 def main():
-    parser = argparse.ArgumentParser(prog='adaptiveperfhtml',
-                                     description='AdaptivePerfHTML web server')
+    parser = argparse.ArgumentParser(prog='adaptyst-analyser',
+                                     description='Adaptyst Analyser web server')
 
     parser.add_argument('results', metavar='PATH',
                         help='path to a profiling results directory '
@@ -27,7 +27,7 @@ def main():
                         help='sampling period in ms for rendering captured '
                         'off-CPU regions in the timeline view (sampling is '
                         'done in a similar way as off-CPU sampling is in '
-                        'AdaptivePerf, 0 disables sampling and makes the '
+                        'Adaptyst, 0 disables sampling and makes the '
                         'website display all captured off-CPU regions), '
                         'default: 0',
                         default=0)
@@ -37,11 +37,11 @@ def main():
     result_path = Path(args.results)
 
     if not result_path.exists():
-        print(f'adaptiveperfhtml: error: {result_path} does not exist',
+        print(f'adaptyst-analyser: error: {result_path} does not exist',
               file=sys.stderr)
         return 1
     elif not result_path.is_dir():
-        print(f'adaptiveperfhtml: error: {result_path} is not a directory',
+        print(f'adaptyst-analyser: error: {result_path} is not a directory',
               file=sys.stderr)
         return 1
 
@@ -55,7 +55,7 @@ def main():
 
     try:
         return subprocess.run(['gunicorn', '-b', args.address,
-                               'adaptiveperf.app:app'],
+                               'adaptystanalyser.app:app'],
                               env=env).returncode
     except KeyboardInterrupt:
         return 130

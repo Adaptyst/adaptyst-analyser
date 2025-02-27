@@ -1,4 +1,4 @@
-# AdaptivePerfHTML: Tool for producing HTML summary of profiling results
+# Adaptyst Analyser: a tool for analysing performance analysis results
 # Copyright (C) CERN. See LICENSE for details.
 
 import traceback
@@ -14,7 +14,7 @@ app.config.from_prefixed_env()
 if 'PROFILING_STORAGE' not in app.config:
     raise RuntimeError('Please set FLASK_PROFILING_STORAGE environment '
                        'variable to the absolute path to a directory where '
-                       'AdaptivePerf profiling results are stored '
+                       'Adaptyst profiling results are stored '
                        '(usually "results").')
 
 
@@ -33,28 +33,28 @@ def post(identifier):
     an identifier given in the URL. The request should have one of the
     following arguments:
     * "tree" (with any value):
-      This instructs AdaptivePerfHTML to return the thread/process
+      This instructs Adaptyst Analyser to return the thread/process
       tree obtained in the session.
     * "perf_map" (with any value):
-      This instructs AdaptivePerfHTML to return perf symbol maps
+      This instructs Adaptyst Analyser to return perf symbol maps
       obtained in the session.
     * "general_analysis" (with a string value):
-      This instructs AdaptivePerfHTML to return general analysis data
+      This instructs Adaptyst Analyser to return general analysis data
       of a type specified in the value (e.g. "roofline" for a cache-aware
       roofline model).
     * "pid" (with a numeric value) and "tid" (with a numeric value)
       and "threshold" (with a decimal value):
-      This instructs AdaptivePerfHTML to return a flame graph of
+      This instructs Adaptyst Analyser to return a flame graph of
       the thread/process with a given PID and TID to be rendered by
       d3-flame-graph, taking into account to collapse blocks taking
       less than a specified share of samples (e.g. if "threshold" is
       set to 0.10, blocks taking less than 10% of samples
       will be collapsed, with an option to expand them at runtime).
     * "callchain" (with any value):
-      This instructs AdaptivePerfHTML to return the session dictionaries
+      This instructs Adaptyst Analyser to return the session dictionaries
       mapping compressed symbol names to full symbol names.
     * "src" (with a string value):
-      This instructs AdaptivePerfHTML to return the source code stored
+      This instructs Adaptyst Analyser to return the source code stored
       in the session under a provided name.
 
     :param str identifier: A profiling session identifier in the form
@@ -118,7 +118,7 @@ def main():
     # frequency) in ms for off-CPU regions to be displayed on the
     # timeline (as rendering a large number of these regions
     # can be resource-heavy). It works in a similar way to
-    # sampling in off-CPU profiling in AdaptivePerf.
+    # sampling in off-CPU profiling in Adaptyst.
     return render_template(
         'viewer.html',
         ids=ProfilingResults.get_all_ids(
