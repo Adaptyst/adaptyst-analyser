@@ -19,10 +19,10 @@ if 'PROFILING_STORAGE' not in app.config:
 
 
 static_path = Path(app.root_path) / 'static'
-scripts = list(map(lambda x: x.name,
-                   static_path.glob('*.js')))
-stylesheets = list(map(lambda x: x.name,
-                       static_path.glob('*.css')))
+scripts = list(sorted(map(lambda x: x.name,
+                          static_path.glob('*.js'))))
+stylesheets = list(sorted(map(lambda x: x.name,
+                              static_path.glob('*.css'))))
 d3_flamegraph_css = (static_path / 'd3-flamegraph.css').read_text()
 
 
