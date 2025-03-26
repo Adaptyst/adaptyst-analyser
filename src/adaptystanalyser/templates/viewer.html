@@ -137,6 +137,11 @@
           cursor:default;
       }
 
+      .menu_item_first {
+          padding:5px;
+          cursor:default;
+      }
+
       #callchain_item {
           border-top-color:black;
           border-top-width:4px;
@@ -149,7 +154,7 @@
           color:gray;
       }
 
-      .menu_item:hover {
+      .menu_item:hover, .menu_item_first:hover {
           background-color:#DDDDDD;
       }
 
@@ -234,10 +239,10 @@
       }
 
       .roofline_window {
-          min-width:750px;
-          width:750px;
-          min-height:550px;
-          height:550px;
+          min-width:800px;
+          width:800px;
+          min-height:750px;
+          height:750px;
       }
 
       .window {
@@ -353,13 +358,14 @@
 
       .roofline_settings {
           display:flex;
-          width:200px;
-          min-width:200px;
+          width:250px;
+          min-width:250px;
           flex-direction:column;
           margin-right:10px;
+          overflow:hidden;
       }
 
-      .roofline_type, .roofline_bounds {
+      .roofline_type, .roofline_bounds, .roofline_points {
           margin-bottom:5px;
       }
 
@@ -367,8 +373,28 @@
           width:100%;
       }
 
+      .roofline_point_select_div {
+          display:flex;
+          flex-direction:row;
+          margin-bottom:10px;
+      }
+
+      .roofline_point_select {
+          flex-grow:1;
+          min-width:0;
+          margin-right:5px;
+      }
+
+      .roofline_point_delete {
+          cursor:pointer;
+      }
+
       .roofline_details {
           flex-grow:1;
+      }
+
+      .roofline_details_text {
+          margin-bottom:10px;
       }
 
       .roofline {
@@ -520,10 +546,15 @@
                        onkeyup="checkValidPercentage(event)"
                        onfocusout="insertValidPercentage(this)" />
       </div>
-      <div>
+      <div class="margin_bottom">
         <input type="checkbox" id="always_ms"
                name="always_ms" onchange="">
         <label for="always_ms">Always display runtimes in milliseconds</label>
+      </div>
+      <div>
+        <input type="checkbox" id="show_carm"
+               name="show_carm" onchange="">
+        <label for="show_carm">Display roofline-related flame graphs (with the title starting with CARM_)</label>
       </div>
     </div>
     <div id="thread_menu_block" class="menu_block">
