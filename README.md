@@ -5,7 +5,7 @@
 A tool for analysing performance analysis results returned e.g. by Adaptyst.
 
 ## Disclaimer
-This is currently a dev version and the tool is under active development. Bugs are to be expected (with the test coverage to be expanded soon). Use at your own risk!
+This is currently a dev version and the tool is under active development. The tests are limited at the moment and bugs are to be expected. Use at your own risk!
 
 All feedback is welcome.
 
