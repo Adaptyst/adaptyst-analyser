@@ -1,5 +1,8 @@
+# SPDX-FileCopyrightText: 2025 CERN
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 # Adaptyst Analyser: a tool for analysing performance analysis results
-# Copyright (C) CERN. See LICENSE for details.
 
 import subprocess
 from hatchling.builders.hooks.plugin.interface import BuildHookInterface

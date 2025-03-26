@@ -1,5 +1,8 @@
+# SPDX-FileCopyrightText: 2025 CERN
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 # Adaptyst Analyser: a tool for analysing performance analysis results
-# Copyright (C) CERN. See LICENSE for details.
 
 import traceback
 from flask import Flask, render_template, request
