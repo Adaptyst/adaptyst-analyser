@@ -546,10 +546,15 @@
                        onkeyup="checkValidPercentage(event)"
                        onfocusout="insertValidPercentage(this)" />
       </div>
-      <div>
+      <div class="margin_bottom">
         <input type="checkbox" id="always_ms"
                name="always_ms" onchange="">
         <label for="always_ms">Always display runtimes in milliseconds</label>
+      </div>
+      <div>
+        <input type="checkbox" id="show_carm"
+               name="show_carm" onchange="">
+        <label for="show_carm">Display roofline-related flame graphs (with the title starting with CARM_)</label>
       </div>
     </div>
     <div id="thread_menu_block" class="menu_block">

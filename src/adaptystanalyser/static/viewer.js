@@ -826,9 +826,13 @@ function setupWindow(window_obj, type, data) {
         }
 
         var dict = session.metrics_dict[data.timeline_group_id];
+        var show_carm_checked = $('#show_carm').prop('checked');
         for (const [k, v] of Object.entries(dict)) {
-            window_obj.find('.flamegraph_metric').append(
-                new Option(v.title, k));
+            if (show_carm_checked ||
+                !v.title.startsWith('CARM_')) {
+                window_obj.find('.flamegraph_metric').append(
+                    new Option(v.title, k));
+            }
         }
 
         window_obj.find('.flamegraph_metric').val('walltime');
