@@ -1738,6 +1738,21 @@ function onAddToRooflineClick(event) {
         // arith_intensity = flop / (ai_nodes[0] * (
         //     4 * single_scalar_ratio + 8 * double_scalar_ratio +
         //         16 * sse_ratio + 32 * avx2_ratio + 64 * avx512_ratio))
+    } else if (info.cpu_type === 'AMD_x86') {
+        flop = instr_nodes[0] + instr_nodes[1] + instr_nodes[2] +
+            instr_nodes[3] + instr_nodes[4] + instr_nodes[5] +
+            instr_nodes[6] + instr_nodes[7];
+        flops = flop / (walltime_node[0][0].value / 1000000000);
+
+        var single_ratio =
+            (instr_nodes[0] + instr_nodes[2] +
+             instr_nodes[4] + instr_nodes[6]) / instr_sum;
+        var double_ratio =
+            (instr_nodes[1] + instr_nodes[3] +
+             instr_nodes[5] + instr_nodes[7]) / instr_sum;
+        arith_intensity = flop / ((ai_nodes[0] + ai_nodes[1]) *
+                                  (4 * single_ratio +
+                                   8 * double_ratio));
     }
 
     session.roofline_dict[name] = [arith_intensity, flops];

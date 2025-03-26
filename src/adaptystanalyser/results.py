@@ -223,26 +223,46 @@ class ProfilingResults:
                         'flame_graph': True
                     }
 
-                    carm_match = re.search(r'^CARM_(\S+)$', match.group(2))
-                    if carm_match is not None:
-                        # Assuming Intel-x86-like for now, TODO: CPU type
-                        # detection in AdaptivePerf
-                        self._roofline_info = {
-                            'cpu_type': 'Intel_x86',
-                            'ai_keys': [
-                                'mem_inst_retired.any'
-                            ],
-                            'instr_keys': [
-                                'fp_arith_inst_retired.scalar_single',
-                                'fp_arith_inst_retired.scalar_double',
-                                'fp_arith_inst_retired.128b_packed_single',
-                                'fp_arith_inst_retired.128b_packed_double',
-                                'fp_arith_inst_retired.256b_packed_single',
-                                'fp_arith_inst_retired.256b_packed_double',
-                                'fp_arith_inst_retired.512b_packed_single',
-                                'fp_arith_inst_retired.512b_packed_double'
-                            ]
-                        }
+                    if len(self._roofline_info) == 0:
+                        carm_match = re.search(r'^CARM_(\S+)_(\S+)$', match.group(2))
+                        if carm_match is not None:
+                            cpu_type = carm_match.group(1)
+
+                            if cpu_type == 'INTEL':
+                                self._roofline_info = {
+                                    'cpu_type': 'Intel_x86',
+                                    'ai_keys': [
+                                        'mem_inst_retired.any'
+                                    ],
+                                    'instr_keys': [
+                                        'fp_arith_inst_retired.scalar_single',
+                                        'fp_arith_inst_retired.scalar_double',
+                                        'fp_arith_inst_retired.128b_packed_single',
+                                        'fp_arith_inst_retired.128b_packed_double',
+                                        'fp_arith_inst_retired.256b_packed_single',
+                                        'fp_arith_inst_retired.256b_packed_double',
+                                        'fp_arith_inst_retired.512b_packed_single',
+                                        'fp_arith_inst_retired.512b_packed_double'
+                                    ]
+                                }
+                            elif cpu_type == 'AMD':
+                                self._roofline_info = {
+                                    'cpu_type': 'AMD_x86',
+                                    'ai_keys': [
+                                        'ls_dispatch:ld_dispatch',
+                                        'ls_dispatch:store_dispatch'
+                                    ],
+                                    'instr_keys': [
+                                        'retired_sse_avx_operations:sp_mult_add_flops',
+                                        'retired_sse_avx_operations:dp_mult_add_flops',
+                                        'retired_sse_avx_operations:sp_add_sub_flops',
+                                        'retired_sse_avx_operations:dp_add_sub_flops',
+                                        'retired_sse_avx_operations:sp_mult_flops',
+                                        'retired_sse_avx_operations:dp_mult_flops',
+                                        'retired_sse_avx_operations:sp_div_flops',
+                                        'retired_sse_avx_operations:dp_div_flops'
+                                    ]
+                                }
 
         self._general_metrics = {}
 
