@@ -43,35 +43,8 @@ var window_dict = {};
 var session_dict = {};
 
 // Window templates
-function createWindowDOM(type, timeline_group_id) {
-    const window_header = `
-<div class="window_header">
-    <span class="window_title"></span>
-    <span class="window_close" onmousedown="windowStopPropagation(event)">
-      <!-- This SVG is from Google Material Icons, originally licensed under
-           Apache License 2.0: https://www.apache.org/licenses/LICENSE-2.0.txt
-           (covered by GNU GPL v3 here) -->
-      <svg xmlns="http://www.w3.org/2000/svg" height="24px"
-           viewBox="0 -960 960 960" width="24px">
-        <title>Close</title>
-        <path d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z"/>
-      </svg>
-    </span>
-   <span class="window_visibility" onmousedown="windowStopPropagation(event)">
-      <!-- This SVG is from Google Material Icons, originally licensed under
-           Apache License 2.0: https://www.apache.org/licenses/LICENSE-2.0.txt
-           (covered by GNU GPL v3 here) -->
-      <svg xmlns="http://www.w3.org/2000/svg" height="24px"
-           viewBox="0 -960 960 960" width="24px">
-        <title>Toggle visibility</title>
-        <path d="M480-320q75 0 127.5-52.5T660-500q0-75-52.5-127.5T480-680q-75 0-127.5 52.5T300-500q0 75 52.5 127.5T480-320Zm0-72q-45 0-76.5-31.5T372-500q0-45 31.5-76.5T480-608q45 0 76.5 31.5T588-500q0 45-31.5 76.5T480-392Zm0 192q-146 0-266-81.5T40-500q54-137 174-218.5T480-800q146 0 266 81.5T920-500q-54 137-174 218.5T480-200Zm0-300Zm0 220q113 0 207.5-59.5T832-500q-50-101-144.5-160.5T480-720q-113 0-207.5 59.5T128-500q50 101 144.5 160.5T480-280Z"/>
-      </svg>
-    </span>
-  </div>
-`;
-
-    const type_dict = {
-        roofline: `
+const type_dict = {
+    roofline: `
 <div class="roofline_box">
   <div class="roofline_settings">
     <fieldset class="roofline_type">
@@ -137,7 +110,7 @@ function createWindowDOM(type, timeline_group_id) {
   </div>
 </div>
 `,
-        flame_graphs: `
+    flame_graphs: `
 <span class="collapse_info">
   Some blocks may be collapsed to speed up rendering, but you can expand
   them by clicking them.
@@ -155,6 +128,15 @@ function createWindowDOM(type, timeline_group_id) {
   <div class="flamegraph_remainder">
     <input type="text" class="flamegraph_search"
            placeholder="Search..." />
+    <!-- This SVG is from Google Material Icons, originally licensed under
+         Apache License 2.0: https://www.apache.org/licenses/LICENSE-2.0.txt
+         (covered by GNU GPL v3 here) -->
+    <svg class="pointer flamegraph_replace"
+         xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960"
+         width="24px" fill="#000000">
+      <title>Replace (right-click to see the existing replacements)</title>
+      <path d="M164-560q14-103 91.5-171.5T440-800q59 0 110.5 22.5T640-716v-84h80v240H480v-80h120q-29-36-69.5-58T440-720q-72 0-127 45.5T244-560h-80Zm620 440L608-296q-36 27-78.5 41.5T440-240q-59 0-110.5-22.5T240-324v84h-80v-240h240v80H280q29 36 69.5 58t90.5 22q72 0 127-45.5T636-480h80q-5 36-18 67.5T664-352l176 176-56 56Z"/>
+    </svg>
     <!-- This SVG is from Google Material Icons, originally licensed under
          Apache License 2.0: https://www.apache.org/licenses/LICENSE-2.0.txt
          (covered by GNU GPL v3 here) -->
@@ -181,7 +163,7 @@ function createWindowDOM(type, timeline_group_id) {
   <div class="flamegraph_svg"></div>
 </div>
 `,
-        code: `
+    code: `
 <div class="code_choice">
   <select name="file" class="code_file">
     <option value="" disabled="disabled">
@@ -209,7 +191,49 @@ function createWindowDOM(type, timeline_group_id) {
   <pre><code class="code_box"></code></pre>
 </div>
 `
-    };
+};
+
+function createWindowDOM(type, timeline_group_id,
+                         session_id) {
+    const window_header = `
+<div class="window_header">
+    <span class="window_title"></span>
+    <span class="window_close" onmousedown="windowStopPropagation(event)">
+      <!-- This SVG is from Google Material Icons, originally licensed under
+           Apache License 2.0: https://www.apache.org/licenses/LICENSE-2.0.txt
+           (covered by GNU GPL v3 here) -->
+      <svg xmlns="http://www.w3.org/2000/svg" height="24px"
+           viewBox="0 -960 960 960" width="24px">
+        <title>Close</title>
+        <path d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z"/>
+      </svg>
+    </span>
+   <span class="window_visibility" onmousedown="windowStopPropagation(event)">
+      <!-- This SVG is from Google Material Icons, originally licensed under
+           Apache License 2.0: https://www.apache.org/licenses/LICENSE-2.0.txt
+           (covered by GNU GPL v3 here) -->
+      <svg xmlns="http://www.w3.org/2000/svg" height="24px"
+           viewBox="0 -960 960 960" width="24px">
+        <title>Toggle visibility</title>
+        <path d="M480-320q75 0 127.5-52.5T660-500q0-75-52.5-127.5T480-680q-75 0-127.5 52.5T300-500q0 75 52.5 127.5T480-320Zm0-72q-45 0-76.5-31.5T372-500q0-45 31.5-76.5T480-608q45 0 76.5 31.5T588-500q0 45-31.5 76.5T480-392Zm0 192q-146 0-266-81.5T40-500q54-137 174-218.5T480-800q146 0 266 81.5T920-500q-54 137-174 218.5T480-200Zm0-300Zm0 220q113 0 207.5-59.5T832-500q-50-101-144.5-160.5T480-720q-113 0-207.5 59.5T128-500q50 101 144.5 160.5T480-280Z"/>
+      </svg>
+    </span>
+   <span class="window_refresh" onmousedown="windowStopPropagation(event)">
+      <!-- This SVG is from Google Material Icons, originally licensed under
+           Apache License 2.0: https://www.apache.org/licenses/LICENSE-2.0.txt
+           (covered by GNU GPL v3 here) -->
+      <svg xmlns="http://www.w3.org/2000/svg" height="24px"
+           viewBox="0 -960 960 960" width="24px">
+        <title>Reset window contents</title>
+        <path d="M480-160q-134 0-227-93t-93-227q0-134 93-227t227-93q69 0 132 28.5T720-690v-110h80v280H520v-80h168q-32-56-87.5-88T480-720q-100 0-170 70t-70 170q0 100 70 170t170 70q77 0 139-44t87-116h84q-28 106-114 173t-196 67Z"/>
+      </svg>
+    </span>
+  </div>
+`;
+
+    if (session_id === undefined) {
+        session_id = $('#results_combobox').val();
+    }
 
     var root = $('<div></div>');
     root.attr('class', 'window ' + type + '_window');
@@ -221,27 +245,29 @@ function createWindowDOM(type, timeline_group_id) {
 
     root.append(content);
 
-    var session_id = $('#results_combobox').prop('selectedIndex');
+    var session_label =
+        session_dict[session_id].label;
+
     var index = 0;
     var new_window_id = undefined;
 
     if (timeline_group_id === undefined) {
         new_window_id =
-            `w_${session_id}_${type}_${index}`;
+            `w_${session_label}_${type}_${index}`;
 
         while (new_window_id in window_dict) {
             index++;
             new_window_id =
-                `w_${session_id}_${type}_${index}`;
+                `w_${session_label}_${type}_${index}`;
         }
     } else {
         new_window_id =
-            `w_${session_id}_${type}_${timeline_group_id}_${index}`;
+            `w_${session_label}_${type}_${timeline_group_id}_${index}`;
 
         while (new_window_id in window_dict) {
             index++;
             new_window_id =
-                `w_${session_id}_${type}_${timeline_group_id}_${index}`;
+                `w_${session_label}_${type}_${timeline_group_id}_${index}`;
         }
     }
 
@@ -251,7 +277,7 @@ function createWindowDOM(type, timeline_group_id) {
         'being_resized': false,
         'collapsed': false,
         'last_focus': Date.now(),
-        'session': $('#results_combobox').val()
+        'session': session_id
     };
 
     root.attr('id', new_window_id);
@@ -261,6 +287,9 @@ function createWindowDOM(type, timeline_group_id) {
               root.attr('id') + '\')');
     root.find('.window_header').attr('onmousedown', 'startDrag(event, \'' +
                                      root.attr('id') + '\')');
+    root.find('.window_refresh').attr(
+        'onclick', 'onWindowRefreshClick(event, \'' +
+            root.attr('id') + '\')');
     root.find('.window_visibility').attr(
         'onclick', 'onWindowVisibilityClick(event, \'' +
             root.attr('id') + '\')');
@@ -785,6 +814,14 @@ $(document).on('change', '#results_combobox', function() {
 });
 
 function setupWindow(window_obj, type, data) {
+    var window_id = window_obj.attr('id');
+    var existing_window = false;
+
+    if (data === undefined) {
+        data = window_dict[window_id].setup_data;
+        existing_window = true;
+    }
+
     var loading_jquery = $('#loading').clone();
     loading_jquery.removeAttr('id');
     loading_jquery.attr('class', 'loading');
@@ -794,7 +831,9 @@ function setupWindow(window_obj, type, data) {
     window_obj.appendTo('body');
     changeFocus(window_obj.attr('id'));
 
-    var session = session_dict[$('#results_combobox').val()];
+    window_dict[window_id].setup_data = data;
+
+    var session = session_dict[window_dict[window_id].session];
     if (type === 'flame_graphs') {
         window_obj.find('.flamegraph_time_ordered').attr(
             'id', window_obj.attr('id') + '_time_ordered');
@@ -809,6 +848,12 @@ function setupWindow(window_obj, type, data) {
             'onchange', 'onMetricChange(\'' + window_obj.attr('id') + '\', event)');
         window_obj.find('.flamegraph_download').attr(
             'onclick', 'downloadFlameGraph(\'' + window_obj.attr('id') + '\')');
+        window_obj.find('.flamegraph_replace').attr(
+            'onclick', 'onFlameGraphReplaceClick(\'' +
+                window_obj.attr('id') + '\')');
+        window_obj.find('.flamegraph_replace').attr(
+            'oncontextmenu', 'onFlameGraphReplaceRightClick(event, \'' +
+                window_obj.attr('id') + '\')');
 
         window_obj.find('.window_title').html(
             '[Session: ' + session.label + '] ' +
@@ -827,19 +872,28 @@ function setupWindow(window_obj, type, data) {
 
         var dict = session.metrics_dict[data.timeline_group_id];
         var show_carm_checked = $('#show_carm').prop('checked');
+        var target_metric_present = false;
         for (const [k, v] of Object.entries(dict)) {
             if (show_carm_checked ||
                 !v.title.startsWith('CARM_')) {
                 window_obj.find('.flamegraph_metric').append(
                     new Option(v.title, k));
+
+                if (k === data.metric) {
+                    target_metric_present = true;
+                }
             }
         }
 
-        window_obj.find('.flamegraph_metric').val('walltime');
-        window_obj.find('.flamegraph_time_ordered').prop('checked', false);
+        var metric = target_metric_present ? data.metric : 'walltime';
+        window_obj.find('.flamegraph_metric').val(metric);
+        window_obj.find('.flamegraph_time_ordered').prop(
+            'checked', data.time_ordered === undefined ? false : data.time_ordered);
         window_obj.find('.flamegraph').attr('data-id', data.timeline_group_id);
 
         var window_id = window_obj.attr('id');
+
+        window_dict[window_id].data.replacements = {};
 
         if (data.timeline_group_id + '_' +
             parseFloat($('#threshold_input').val()) in session.result_cache) {
@@ -847,13 +901,13 @@ function setupWindow(window_obj, type, data) {
                 data.timeline_group_id + '_' + parseFloat($(
                     '#threshold_input').val())];
 
-            if (!('walltime' in window_dict[window_id].data.result_obj)) {
+            if (!(metric in window_dict[window_id].data.result_obj)) {
                 window_dict[window_id].data.flamegraph_obj = undefined;
                 window_obj.find('.flamegraph_svg').hide();
                 window_obj.find('.flamegraph_search').val('');
                 window_obj.find('.no_flamegraph').show();
             } else {
-                openFlameGraph(window_obj.attr('id'), 'walltime');
+                openFlameGraph(window_obj.attr('id'), metric);
             }
 
             loading_jquery.hide();
@@ -873,13 +927,13 @@ function setupWindow(window_obj, type, data) {
                         '#threshold_input').val())] = ajax_obj;
                 window_dict[window_id].data.result_obj = ajax_obj;
 
-                if (!('walltime' in window_dict[window_id].data.result_obj)) {
+                if (!(metric in window_dict[window_id].data.result_obj)) {
                     window_dict[window_id].data.flamegraph_obj = undefined;
                     window_obj.find('.flamegraph_svg').hide();
                     window_obj.find('.flamegraph_search').val('');
                     window_obj.find('.no_flamegraph').show();
                 } else {
-                    openFlameGraph(window_obj.attr('id'), 'walltime');
+                    openFlameGraph(window_obj.attr('id'), metric);
                 }
 
                 loading_jquery.hide();
@@ -892,7 +946,9 @@ function setupWindow(window_obj, type, data) {
             });
         }
 
-        new ResizeObserver(onWindowResize).observe(window_obj[0]);
+        if (!existing_window) {
+            new ResizeObserver(onWindowResize).observe(window_obj[0]);
+        }
     } else if (type === 'roofline') {
         window_obj.find('.window_title').html(
             '[Session: ' + session.label + '] ' + 'Cache-aware roofline model');
@@ -1045,10 +1101,13 @@ function prepareCodePreview(window_obj, code, lines) {
 //
 // default_path corresponds to <path> to be displayed first
 // when a code preview window is shown.
-function openCode(data, default_path) {
-    var session = session_dict[$('#results_combobox').val()];
+function openCode(data, default_path, session_id) {
+    var session = session_dict[session_id === undefined ?
+                               $('#results_combobox').val() :
+                               session_id];
     var load = function(code) {
-        var new_window = createWindowDOM('code');
+        var new_window = createWindowDOM('code',
+                                         undefined, session_id);
         new_window.css('top', 'calc(50% - 275px)');
         new_window.css('left', 'calc(50% - 375px)');
         setupWindow(new_window, 'code', {
@@ -1555,6 +1614,7 @@ function onOpenCodeClick(event) {
     var data = event.data.data;
     var node = data.node;
     var offset_dict = data.offset_dict;
+    var session_id = data.session;
     var sums = {};
 
     for (const [addr, val] of Object.entries(node.data.offsets)) {
@@ -1580,7 +1640,7 @@ function onOpenCodeClick(event) {
         sums[decoded.file][decoded.line][4] += val;
     }
 
-    openCode(sums, Object.keys(sums)[0]);
+    openCode(sums, Object.keys(sums)[0], session_id);
 }
 
 function onAddToRooflineClick(event) {
@@ -1788,12 +1848,20 @@ function openFlameGraph(window_id, metric) {
     });
     flamegraph_obj.getName(function(node) {
         var session = session_dict[window_dict[window_id].session];
+        var result = undefined;
         if (node.data.name in session.callchain_obj[window_obj.find('.flamegraph_metric').val()]) {
             var symbol = session.callchain_obj[window_obj.find('.flamegraph_metric').val()][node.data.name];
-            return String(getSymbolFromMap(symbol[0], symbol[1], window_id));
+            result = new String(getSymbolFromMap(symbol[0], symbol[1], window_id));
         } else {
-            return String(node.data.name);
+            result = new String(node.data.name);
         }
+
+        for (const [k, v] of Object.entries(
+            window_dict[window_id].data.replacements)) {
+            result = result.replace(new RegExp(k), v);
+        }
+
+        return result;
     });
     flamegraph_obj.onClick(function(node) {
         if ("hidden_children" in node.data) {
@@ -1847,7 +1915,8 @@ function openFlameGraph(window_id, metric) {
             if (code_available) {
                 options.push(['View the code details', [{
                     'offset_dict': offset_dict,
-                    'node': node
+                    'node': node,
+                    'session': window_dict[window_id].session
                 }, onOpenCodeClick]]);
             }
         }
@@ -1953,6 +2022,123 @@ function onWindowCloseClick(window_id) {
     $('#' + window_id).remove();
     delete window_dict[window_id];
     changeFocus();
+}
+
+function onWindowRefreshClick(event, window_id) {
+    windowStopPropagation(event);
+
+    var window_dict_obj = window_dict[window_id];
+
+    if (window_dict_obj.type === 'flame_graphs') {
+        window_dict_obj.setup_data.metric =
+            $('#' + window_id).find('.flamegraph_metric').val();
+        window_dict_obj.setup_data.time_ordered =
+            $('#' + window_id).find('.flamegraph_time_ordered').prop('checked');
+    }
+
+    $('#' + window_id).find('.window_content').html(
+        type_dict[window_dict_obj.type]);
+    window_dict_obj.data = {}
+    setupWindow($('#' + window_id),
+                window_dict_obj.type);
+}
+
+function onFlameGraphReplaceClick(window_id) {
+    var query = window.prompt(
+        'Please enter a regular expression to be replaced in ' +
+            'the flame graph.',
+        $('#' + window_id).find('.flamegraph_search').val());
+
+    if (query == undefined || query === "") {
+        return;
+    }
+
+    var replacement = window.prompt(
+        'Please enter what you want to replace your query with. ' +
+            'You can use the syntax from https://developer.mozilla.org/' +
+            'en-US/docs/Web/JavaScript/Reference/Global_Objects/String/' +
+            'replace#specifying_a_string_as_the_replacement.');
+
+    if (replacement == undefined) {
+        return;
+    }
+
+    window_dict[window_id].data.replacements[query] = replacement;
+    window_dict[window_id].data.flamegraph_obj.update();
+}
+
+function onFlameGraphReplaceRightClick(event, window_id) {
+    windowStopPropagation(event);
+
+    var options = [];
+
+    for (const [k, v] of Object.entries(
+        window_dict[window_id].data.replacements)) {
+        options.push([k + ' ==> ' + v, [{'window_id': window_id,
+                           'query': k, 'replacement': v},
+                          onReplacementClick]]);
+    }
+
+    if (options.length === 0) {
+        return;
+    }
+
+    var menu = createMenuDOM(options);
+
+    menu.css('top', event.pageY);
+    menu.css('left', event.pageX);
+    menu.outerHeight('auto');
+    menu.css('display', 'flex');
+    menu.css('z-index', '10001');
+
+    var height = menu.outerHeight();
+    var width = menu.outerWidth();
+
+    if (event.pageY + height > $(window).outerHeight() - 30) {
+        menu.outerHeight($(window).outerHeight() - event.pageY - 30);
+    }
+
+    if (event.pageX + width > $(window).outerWidth() - 20) {
+        menu.css('left', event.pageX - width);
+    }
+
+    $('body').append(menu);
+}
+
+function onReplacementClick(info) {
+    var data = info.data.data;
+
+    var replacements = window_dict[data.window_id].data.replacements;
+
+    var query = window.prompt(
+        'Please enter a regular expression to be replaced in ' +
+            'the flame graph. To remove the replacement, put ' +
+            'an empty text here.', data.query);
+
+    if (query == undefined) {
+        return;
+    }
+
+    if (query === "") {
+        delete replacements[data.query];
+        window.alert('The replacement has been removed!');
+        window_dict[data.window_id].data.flamegraph_obj.update();
+        return;
+    }
+
+    var replacement = window.prompt(
+        'Please enter what you want to replace your query with. ' +
+            'You can use the syntax from https://developer.mozilla.org/' +
+            'en-US/docs/Web/JavaScript/Reference/Global_Objects/String/' +
+            'replace#specifying_a_string_as_the_replacement.',
+        data.replacement);
+
+    if (replacement == undefined) {
+        return;
+    }
+
+    window_dict[window_id].data.replacements[query] = replacement;
+    window_dict[window_id].data.flamegraph_obj.update();
 }
 
 function onMetricChange(window_id, event) {
