@@ -2137,8 +2137,8 @@ function onReplacementClick(info) {
         return;
     }
 
-    window_dict[window_id].data.replacements[query] = replacement;
-    window_dict[window_id].data.flamegraph_obj.update();
+    window_dict[data.window_id].data.replacements[query] = replacement;
+    window_dict[data.window_id].data.flamegraph_obj.update();
 }
 
 function onMetricChange(window_id, event) {
