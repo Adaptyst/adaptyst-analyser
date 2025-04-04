@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2025 CERN
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 workflow:
   rules:
     - if: $CI_PIPELINE_SOURCE == "external_pull_request_event"

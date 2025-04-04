@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2025 CERN
+
+SPDX-License-Identifier: CC-BY-4.0
+-->
+
 # Adaptyst Analyser
 [![License: GNU GPL v3](https://img.shields.io/badge/license-GNU%20GPL%20v3-blue)]()
 [![Version: 0.1.dev](https://img.shields.io/badge/version-0.1.dev-red)]()
