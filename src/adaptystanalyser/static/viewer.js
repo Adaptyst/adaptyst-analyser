@@ -1102,9 +1102,11 @@ function prepareCodePreview(window_obj, code, lines) {
 // default_path corresponds to <path> to be displayed first
 // when a code preview window is shown.
 function openCode(data, default_path, session_id) {
-    var session = session_dict[session_id === undefined ?
-                               $('#results_combobox').val() :
-                               session_id];
+    if (session_id === undefined) {
+        session_id = $('#results_combobox').val();
+    }
+
+    var session = session_dict[session_id];
     var load = function(code) {
         var new_window = createWindowDOM('code',
                                          undefined, session_id);
@@ -1121,7 +1123,7 @@ function openCode(data, default_path, session_id) {
         load(session.src_cache[default_path]);
     } else {
         $.ajax({
-            url: $('#block').attr('result_id') + '/',
+            url: session_id + '/',
             method: 'POST',
             dataType: 'text',
             data: {src: session.src_index_dict[default_path]}
@@ -1147,7 +1149,7 @@ function onCodeFileChange(window_id, event) {
         load(session.src_cache[path]);
     } else {
         $.ajax({
-            url: $('#block').attr('result_id') + '/',
+            url: window_dict[window_id].session + '/',
             method: 'POST',
             dataType: 'text',
             data: {src: session.src_index_dict[path]}
