@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2025 CERN
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 FROM python:latest
 
 RUN apt-get update && apt-get dist-upgrade -y && apt-get install -y nodejs npm
