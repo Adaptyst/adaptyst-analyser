@@ -18,7 +18,7 @@ All feedback is welcome.
 ## License
 Copyright (C) CERN.
 
-The project is distributed under the GNU GPL v3 license. See LICENSE for details.
+The project is generally distributed under the GNU GPL v3 (or later version) license, with a few exceptions. See the individual files for their licensing information.
 
 ## Installation and documentation
 The installation instructions can be found at the Adaptyst website [here](https://adaptyst.web.cern.ch/install#adaptyst-analyser). Similarly, the user documentation can be found [here](https://adaptyst.web.cern.ch/docs/intro/welcome).
