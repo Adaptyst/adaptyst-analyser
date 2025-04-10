@@ -8,11 +8,21 @@ workflow:
       when: never
     - when: always
 
-# The entire content below is based on https://gitlab.cern.ch/gitlabci-examples/build_docker_image/-/blob/master/.gitlab-ci.yml
+# Most of the content below is based on https://gitlab.cern.ch/gitlabci-examples/build_docker_image/-/blob/master/.gitlab-ci.yml
 stages:
+  - licensing-check
   - build
   - test
   - deploy
+
+reuse-lint:
+  image:
+    name: registry.cern.ch/docker.io/fsfe/reuse
+    entrypoint: [""]
+  stage: licensing-check
+  script:
+    - cd $CI_PROJECT_DIR
+    - reuse lint
 
 docker-build:
   image:
