@@ -831,8 +831,10 @@ function setupWindow(window_obj, type, data) {
     loading_jquery.prependTo(window_obj.find('.window_content'));
     loading_jquery.show();
 
-    window_obj.appendTo('body');
-    changeFocus(window_obj.attr('id'));
+    if (!existing_window) {
+        window_obj.appendTo('body');
+        changeFocus(window_obj.attr('id'));
+    }
 
     window_dict[window_id].setup_data = data;
 
