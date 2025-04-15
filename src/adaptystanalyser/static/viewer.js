@@ -831,8 +831,10 @@ function setupWindow(window_obj, type, data) {
     loading_jquery.prependTo(window_obj.find('.window_content'));
     loading_jquery.show();
 
-    window_obj.appendTo('body');
-    changeFocus(window_obj.attr('id'));
+    if (!existing_window) {
+        window_obj.appendTo('body');
+        changeFocus(window_obj.attr('id'));
+    }
 
     window_dict[window_id].setup_data = data;
 
@@ -918,7 +920,7 @@ function setupWindow(window_obj, type, data) {
             var pid_tid = data.timeline_group_id.split('_');
 
             $.ajax({
-                url: $('#block').attr('result_id') + '/',
+                url: window_dict[window_id].session + '/',
                 method: 'POST',
                 dataType: 'json',
                 data: {pid: pid_tid[0], tid: pid_tid[1],
@@ -988,7 +990,7 @@ function setupWindow(window_obj, type, data) {
             loading_jquery.hide();
         } else {
             $.ajax({
-                url: $('#block').attr('result_id') + '/',
+                url: window_dict[window_id].session + '/',
                 method: 'POST',
                 dataType: 'json',
                 data: {general_analysis: type}
