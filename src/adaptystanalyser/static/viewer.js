@@ -383,14 +383,24 @@ function getSymbolFromMap(addr, map_name, window_id) {
     return addr;
 }
 
-$(document).on('change', '#results_combobox', function() {
-    $('#settings').hide();
+$(document).on('change', '#results_combobox', loadCurrentSession);
+
+function loadCurrentSession() {
+    $('#off_cpu_sampling_warning').hide();
+    $('#no_off_cpu_warning').hide();
+    $('#glossary').hide();
+    $('#general_analyses').attr('class', 'disabled');
+    $('#general_analyses').attr('onclick', '');
+    $('#refresh').attr('class', 'disabled');
+    $('#refresh').attr('onclick', '');
     $('#block').hide();
     $('#loading').show();
     $('#results_combobox option:selected').each(function() {
         var value = $(this).val();
         var label = $(this).attr('data-label');
         var session_init = false;
+        var offcpu_sampling = 0;
+        var show_no_off_cpu_warning = false;
 
         if (!(value in session_dict)) {
             session_init = true;
@@ -412,7 +422,8 @@ $(document).on('change', '#results_combobox', function() {
                                        general_metrics_dict,
                                        sampled_diff_dict,
                                        src_dict, src_index_dict,
-                                       roofline_info) {
+                                       roofline_info,
+                                       max_off_cpu_sampling) {
                 var item = {
                     id: json.id,
                     group: json.id,
@@ -507,29 +518,44 @@ $(document).on('change', '#results_combobox', function() {
                     callchain_dict[item.id] = json.start_callchain;
                 }
 
-                for (var i = 0; i < json.off_cpu.length; i++) {
-                    var start = json.off_cpu[i][0];
-                    var end = start + json.off_cpu[i][1];
-                    var offcpu_sampling = parseInt(
-                        $('#viewer_script').attr('data-offcpu-sampling'));
+                var offcpu_sampling_raw = parseFloat($('#off_cpu_scale').val());
 
-                    if (offcpu_sampling === 0 ||
-                        start % offcpu_sampling === 0 ||
-                        end % offcpu_sampling === 0 ||
-                        Math.floor(start / offcpu_sampling) != Math.floor(
-                            end / offcpu_sampling)) {
-                        var off_cpu_item = {
-                            id: json.id + '_offcpu' + i,
-                            group: json.id,
-                            type: 'background',
-                            content: '',
-                            start: json.off_cpu[i][0],
-                            end: json.off_cpu[i][0] + json.off_cpu[i][1],
-                            style: 'background-color:#0294e3'
-                        };
+                if (offcpu_sampling_raw > 0) {
+                    if (offcpu_sampling_raw < 1) {
+                        if (level === 0) {
+                            max_off_cpu_sampling = json.runtime;
+                        }
 
-                        item_list.push(off_cpu_item);
+                        if (max_off_cpu_sampling !== undefined) {
+                            offcpu_sampling = Math.round(Math.pow(
+                                1 - offcpu_sampling_raw, 3) * max_off_cpu_sampling);
+                        }
                     }
+
+                    for (var i = 0; i < json.off_cpu.length; i++) {
+                        var start = json.off_cpu[i][0];
+                        var end = start + json.off_cpu[i][1];
+
+                        if (offcpu_sampling === 0 ||
+                            start % offcpu_sampling === 0 ||
+                            end % offcpu_sampling === 0 ||
+                            Math.floor(start / offcpu_sampling) != Math.floor(
+                                end / offcpu_sampling)) {
+                            var off_cpu_item = {
+                                id: json.id + '_offcpu' + i,
+                                group: json.id,
+                                type: 'background',
+                                content: '',
+                                start: json.off_cpu[i][0],
+                                end: json.off_cpu[i][0] + json.off_cpu[i][1],
+                                style: 'background-color:#0294e3'
+                            };
+
+                            item_list.push(off_cpu_item);
+                        }
+                    }
+                } else {
+                    show_no_off_cpu_warning = true;
                 }
 
                 for (var i = 0; i < json.children.length; i++) {
@@ -547,7 +573,8 @@ $(document).on('change', '#results_combobox', function() {
                                       sampled_diff_dict,
                                       src_dict,
                                       src_index_dict,
-                                      roofline_info);
+                                      roofline_info,
+                                      max_off_cpu_sampling);
                 }
             }
 
@@ -606,10 +633,31 @@ $(document).on('change', '#results_combobox', function() {
                                       session_dict[value].roofline_info);
                 }
 
+                if ($.isEmptyObject(session_dict[value].general_metrics_dict)) {
+                    $('#general_analyses').attr('onclick', '');
+                    $('#general_analyses').attr('class', 'disabled');
+                } else {
+                    $('#general_analyses').attr('onclick', 'onGeneralAnalysesClick(event)');
+                    $('#general_analyses').attr('class', 'pointer');
+                }
+
                 var container = $('#block')[0];
                 container.innerHTML = '';
 
-                $('#settings').show();
+                if (show_no_off_cpu_warning) {
+                    $('#no_off_cpu_warning').show();
+                } else if (offcpu_sampling > 0) {
+                    $('#off_cpu_sampling_period').text(offcpu_sampling);
+                    $('#off_cpu_scale_value').text($('#off_cpu_scale').val());
+                    $('#off_cpu_sampling_warning').show();
+                }
+
+                $('#refresh').attr('onclick', 'onSessionRefreshClick(event)');
+                $('#refresh').attr('class', 'pointer');
+                $('#off_cpu_scale_desc').text(
+                    'Off-CPU timeline display scale (please refresh ' +
+                        'your session after changing):');
+                $('#glossary').show();
                 $('#block').show();
                 $('#loading').hide();
 
@@ -687,7 +735,7 @@ $(document).on('change', '#results_combobox', function() {
                                                         event.data.line] = 'exact';
                                                     closeAllMenus(undefined, true);
                                                     openCode(data, event.data.file);
-                                            });
+                                                });
                                         }
                                     } else {
                                         new_span.attr('title', symbol[1] + '+' + offset);
@@ -814,7 +862,11 @@ $(document).on('change', '#results_combobox', function() {
                 $('#loading').hide();
             });
     });
-});
+}
+
+function onSessionRefreshClick(event) {
+    loadCurrentSession();
+}
 
 function setupWindow(window_obj, type, data) {
     var window_id = window_obj.attr('id');
