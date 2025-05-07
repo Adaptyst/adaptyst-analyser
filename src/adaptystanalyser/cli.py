@@ -8,6 +8,7 @@ import sys
 import subprocess
 import os
 from pathlib import Path
+from importlib.metadata import version
 
 
 def main():
@@ -17,6 +18,9 @@ def main():
     parser.add_argument('results', metavar='PATH',
                         help='path to a profiling results directory '
                         '(relative or absolute)')
+    parser.add_argument('--version', action='version', help='print '
+                        'version and exit', version='v' + version(
+                            'adaptyst-analyser'))
     parser.add_argument('-a',
                         metavar='ADDR',
                         dest='address',
