@@ -122,6 +122,19 @@ Adaptyst Analyser: a tool for analysing performance analysis results
           align-items:center;
       }
 
+      .setting_item {
+          display:flex;
+          align-items:center;
+      }
+
+      .setting_label_left {
+          margin-right:5px;
+      }
+
+      .setting_label_right {
+          margin-left:5px;
+      }
+
       #runtime {
           flex-grow:1;
       }
@@ -560,8 +573,8 @@ Adaptyst Analyser: a tool for analysing performance analysis results
       </div>
     </div>
     <div id="settings_block">
-      <div class="margin_bottom">
-        <label for="off_cpu_scale" id="off_cpu_scale_desc">
+      <div class="margin_bottom setting_item">
+        <label for="off_cpu_scale" id="off_cpu_scale_desc" class="setting_label_left">
           Off-CPU timeline display scale:
         </label>
         <input name="off_cpu_scale"
@@ -571,8 +584,8 @@ Adaptyst Analyser: a tool for analysing performance analysis results
                step=".01"
                value="{{ offcpu_sampling }}" />
       </div>
-      <div class="margin_bottom">
-        <label for="threshold_input">
+      <div class="margin_bottom setting_item">
+        <label for="threshold_input" class="setting_label_left">
           Do not display flame graph blocks taking less than this % of samples:
         </label>
         <input type="number" name="threshold_input"
@@ -581,8 +594,8 @@ Adaptyst Analyser: a tool for analysing performance analysis results
                onkeyup="checkValidPercentage(event)"
                onfocusout="insertValidPercentage(this)" />
       </div>
-      <div class="margin_bottom">
-        <label for="runtime_diff_threshold_input">
+      <div class="margin_bottom setting_item">
+        <label for="runtime_diff_threshold_input" class="setting_label_left">
           Warn if the difference between exact and sampled runtime exceeds this %:
         </label>
         <input type="number" value="50", step="1" min="0"
@@ -591,15 +604,15 @@ Adaptyst Analyser: a tool for analysing performance analysis results
                onkeyup="checkValidPercentage(event)"
                onfocusout="insertValidPercentage(this)" />
       </div>
-      <div class="margin_bottom">
+      <div class="margin_bottom setting_item">
         <input type="checkbox" id="always_ms"
                name="always_ms" onchange="">
-        <label for="always_ms">Always display runtimes in milliseconds</label>
+        <label for="always_ms" class="setting_label_right">Always display runtimes in milliseconds</label>
       </div>
-      <div>
+      <div class="setting_item">
         <input type="checkbox" id="show_carm"
                name="show_carm" onchange="">
-        <label for="show_carm">Display roofline-related flame graphs (with the title starting with CARM_)</label>
+        <label for="show_carm" class="setting_label_right">Display roofline-related flame graphs (with the title starting with CARM_)</label>
       </div>
     </div>
     <div id="thread_menu_block" class="menu_block">
