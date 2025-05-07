@@ -6,7 +6,7 @@ SPDX-License-Identifier: CC-BY-4.0
 
 # Adaptyst Analyser
 [![License: GNU GPL v3](https://img.shields.io/badge/license-GNU%20GPL%20v3-blue)]()
-[![Version: 0.1.dev](https://img.shields.io/badge/version-0.1.dev-red)]()
+[![Version](https://img.shields.io/github/v/release/adaptyst/adaptyst-analyser?include_prereleases&label=version)](https://github.com/Adaptyst/adaptyst-analyser/releases)
 
 A tool for analysing performance analysis results returned e.g. by Adaptyst.
 
