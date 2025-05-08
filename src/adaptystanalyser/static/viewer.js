@@ -820,7 +820,7 @@ function loadCurrentSession() {
 
                         if (props.pageX + width > $(window).outerWidth() - 20) {
                             $('#thread_menu_block').css(
-                                'left', props.pageX - width);
+                                'left', Math.max(0, props.pageX - width));
                         }
 
                         props.event.preventDefault();
@@ -2000,7 +2000,7 @@ function openFlameGraph(window_id, metric) {
         }
 
         if (event.pageX + width > $(window).outerWidth() - 20) {
-            menu.css('left', event.pageX - width);
+            menu.css('left', Math.max(0, event.pageX - width));
         }
 
         $('body').append(menu);
@@ -2158,7 +2158,7 @@ function onFlameGraphReplaceRightClick(event, window_id) {
     }
 
     if (event.pageX + width > $(window).outerWidth() - 20) {
-        menu.css('left', event.pageX - width);
+        menu.css('left', Math.max(0, event.pageX - width));
     }
 
     $('body').append(menu);
@@ -2414,17 +2414,11 @@ function onSettingsClick(event) {
     $('#settings_block').css('z-index', '10001');
     $('#settings_block').show();
 
-    var height = $('#settings_block').outerHeight();
     var width = $('#settings_block').outerWidth();
-
-    if (event.clientY + height > $(window).outerHeight() - 30) {
-        $('#settings_block').outerHeight(
-            $(window).outerHeight() - props.pageY - 30);
-    }
 
     if (event.clientX + width > $(window).outerWidth() - 20) {
         $('#settings_block').css(
-            'left', props.pageX - width);
+            'left', Math.max(0, event.clientX - width));
     }
 
     event.preventDefault();
@@ -2450,6 +2444,13 @@ function onGeneralAnalysesClick(event) {
     $('#general_analysis_menu_block').outerHeight('auto');
     $('#general_analysis_menu_block').css('display', 'flex');
     $('#general_analysis_menu_block').css('z-index', '10001');
+
+    var width = $('#general_analysis_menu_block').outerWidth();
+
+    if (event.clientX + width > $(window).outerWidth() - 20) {
+        $('#general_analysis_menu_block').css(
+            'left', Math.max(0, event.clientX - width));
+    }
 
     event.preventDefault();
     event.stopPropagation();
