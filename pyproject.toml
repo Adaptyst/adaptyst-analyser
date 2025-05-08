@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 [build-system]
-requires = ["hatchling", "hatch-vcs"]
+requires = ["hatchling", "versioningit"]
 build-backend = "hatchling.build"
 
 [project]
@@ -13,7 +13,7 @@ authors = [
   { name="Maksymilian Graczyk", email="maksymilian.graczyk@cern.ch" },
 ]
 description = "A tool for analysing performance analysis results returned e.g. by Adaptyst"
-requires-python = ">=3.6"
+requires-python = ">=3.8"
 dependencies = [
   "Jinja2",
   "treelib",
@@ -31,7 +31,11 @@ classifiers = [
 adaptyst-analyser = "adaptystanalyser.cli:main"
 
 [tool.hatch.version]
-source = "vcs"
+source = "versioningit"
+
+[tool.versioningit.format]
+distance = "{base_version}+{distance}.{rev}"
+distance-dirty = "{base_version}+{distance}.{rev}.d{build_date:%Y%m%d}"
 
 [tool.hatch.build.targets.wheel]
 only-include = ["src/adaptystanalyser"]
