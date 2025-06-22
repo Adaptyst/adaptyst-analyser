@@ -51,8 +51,9 @@ mkdir $TMP_DIR
 cd $TMP_DIR
 npm init --yes
 npm install --install-links $PROJ_DIR/d3-flame-graph
-npm install function-plot @highlightjs/cdn-assets highlightjs-line-numbers.js
+npm install function-plot @highlightjs/cdn-assets highlightjs-line-numbers.js sigma graphology chroma-js
 cp node_modules/*/dist/*.min.js node_modules/*/dist/*.css $PROJ_DIR/src/adaptystanalyser/static
+cp node_modules/chroma-js/dist/chroma.min.cjs $PROJ_DIR/src/adaptystanalyser/static/chroma.min.js
 cp node_modules/function-plot/dist/function-plot.js $PROJ_DIR/src/adaptystanalyser/static
 cp node_modules/@highlightjs/cdn-assets/highlight.min.js $PROJ_DIR/src/adaptystanalyser/static
 cp node_modules/@highlightjs/cdn-assets/styles/default.min.css $PROJ_DIR/src/adaptystanalyser/static/highlightjs.css

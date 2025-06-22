@@ -16,7 +16,7 @@ def main():
                                      description='Adaptyst Analyser web server')
 
     parser.add_argument('results', metavar='PATH',
-                        help='path to a profiling results directory '
+                        help='path to a performance analysis results directory '
                         '(relative or absolute)')
     parser.add_argument('--version', action='version', help='print '
                         'version and exit', version='v' + version(
@@ -42,8 +42,24 @@ def main():
                         'does during profiling, with the sampling frequency '
                         'being higher with higher values") (default: 100)',
                         default=100)
+    parser.add_argument('-t',
+                        metavar='TITLE', dest='title', type=str, default='',
+                        help='custom title to be displayed alongside '
+                        '"Adaptyst Analyser" (e.g. if set to XYZ, the '
+                        'displayed entire title will be '
+                        '"Adaptyst Analyser (XYZ)")')
+    parser.add_argument('-b',
+                        metavar='CSS', dest='background', type=str,
+                        default='', help='custom background CSS of the website '
+                        '(syntax is the same as in "background" in CSS, do not use '
+                        'semicolons)')
 
     args = parser.parse_args()
+
+    if ';' in args.background:
+        print('adaptyst-analyser: error: semicolons are not allowed in -b',
+              file=sys.stderr)
+        return 1
 
     if args.off_cpu_sampling < 0 or \
        args.off_cpu_sampling > 100:
@@ -66,8 +82,10 @@ def main():
 
     env = os.environ.copy()
     env.update({
-        'FLASK_PROFILING_STORAGE': str(result_path),
-        'FLASK_OFFCPU_SAMPLING': str(args.off_cpu_sampling / 100)
+        'FLASK_PERFORMANCE_ANALYSIS_STORAGE': str(result_path),
+        'FLASK_OFFCPU_SAMPLING': str(args.off_cpu_sampling / 100),
+        'FLASK_CUSTOM_TITLE': args.title,
+        'FLASK_BACKGROUND_CSS': args.background
     })
 
     try:
