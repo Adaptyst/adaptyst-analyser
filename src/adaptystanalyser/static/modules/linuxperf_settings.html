@@ -1,0 +1,41 @@
+<div class="margin_bottom setting_item">
+  <label for="off_cpu_scale" id="off_cpu_scale_desc" class="setting_label_left">
+    Off-CPU timeline display scale:
+  </label>
+  <input name="off_cpu_scale"
+         id="off_cpu_scale"
+         type="range"
+         min="0" max="1"
+         step=".01"
+         value="1" />
+</div>
+<div class="margin_bottom setting_item">
+  <label for="threshold_input" class="setting_label_left">
+    Do not display flame graph blocks taking less than this % of samples:
+  </label>
+  <input type="number" name="threshold_input"
+         value="2.50" min="0" max="100"
+         step=".1" id="threshold_input"
+         onkeyup="checkValidPercentage(event)"
+         onfocusout="insertValidPercentage(this)" />
+</div>
+<div class="margin_bottom setting_item">
+  <label for="runtime_diff_threshold_input" class="setting_label_left">
+    Warn if the difference between exact and sampled runtime exceeds this %:
+  </label>
+  <input type="number" value="50", step="1" min="0"
+         name="runtime_diff_threshold_input"
+         id="runtime_diff_threshold_input"
+         onkeyup="checkValidPercentage(event)"
+         onfocusout="insertValidPercentage(this)" />
+</div>
+<div class="margin_bottom setting_item">
+  <input type="checkbox" id="always_ms"
+         name="always_ms" onchange="">
+  <label for="always_ms" class="setting_label_right">Always display runtimes in milliseconds</label>
+</div>
+<div class="setting_item">
+  <input type="checkbox" id="show_carm"
+         name="show_carm" onchange="">
+  <label for="show_carm" class="setting_label_right">Display roofline-related flame graphs (with the title starting with CARM_)</label>
+</div>

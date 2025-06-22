@@ -1,0 +1,186 @@
+.linuxperf_timeline {
+    padding:10px;
+}
+
+.vis-inner {
+    padding-left:5px !important;
+}
+
+.vis-label.vis-nested-group.vis-group-level-unknown-but-gte1 {
+    background: #ffffff !important;
+}
+
+.vis-group-level-unknown-but-gte1 {
+    border:0;
+}
+
+.callchain_item {
+    border-top-color:black;
+    border-top-width:4px;
+    border-top-style:double;
+    padding:5px;
+    cursor:default;
+}
+
+.callchain {
+    font-size:14px;
+    overflow:auto;
+    flex-grow:1;
+    white-space:nowrap;
+    margin-top:5px;
+    /* Based on https://meta.stackexchange.com/q/364048 */
+    /* (originally CC BY-SA 4.0, covered by GNU GPL v3 here) */
+    font-family:ui-monospace,
+                Cascadia Mono,
+                Segoe UI Mono,
+                Ubuntu Mono,
+                Roboto Mono,
+                Menlo,
+                Monaco,
+                Consolas,
+                monospace;
+}
+
+.header_item {
+    background-color:#BBBBBB;
+    padding:5px;
+    cursor:default;
+    display:flex;
+    align-items:center;
+}
+
+.runtime {
+    flex-grow:1;
+}
+
+.runtime_warning {
+    margin-left:10px;
+    cursor:help;
+}
+
+.linuxperf_timeline_window {
+    min-width:1000px;
+    width:1000px;
+    min-height:400px;
+    height:400px;
+}
+
+.linuxperf_code_window {
+    min-width:750px;
+    width:750px;
+    min-height:550px;
+    height:550px;
+}
+
+.linuxperf_code_content {
+    overflow:hidden;
+    display:flex;
+    flex-direction:column;
+}
+
+.code_container {
+    overflow:auto;
+}
+
+.code_choice {
+    display:flex;
+    flex-direction:row;
+    align-items:center;
+    margin-bottom:10px;
+    margin-left:5px;
+    margin-right:5px;
+}
+
+.code_file {
+    flex-grow:1;
+    min-width:0;
+    margin-right:5px;
+}
+
+.code_type {
+    width:150px;
+    min-width:150px;
+    margin-right:5px;
+}
+
+.code_copy_all {
+    min-width:24px;
+}
+
+.horizontal_flex {
+    display:flex;
+    flex-direction:column;
+    flex-grow:1;
+}
+
+.vertical_flex {
+    display:flex;
+    flex-direction:row;
+}
+
+.collapse_info {
+    font-style:italic;
+    text-align:center;
+    margin-top:5px;
+    margin-bottom:10px;
+    width:100%;
+}
+
+.flamegraph {
+    flex-grow:1;
+    overflow-x:hidden;
+}
+
+.flamegraph_metric_choice {
+    margin-left:5px;
+    margin-right:100px;
+    display:flex;
+    align-items:center;
+}
+
+.flamegraph_search {
+    flex-grow:1;
+    margin-right:5px;
+}
+
+.flamegraph_metric {
+    max-width:250px;
+    margin-right:5px;
+}
+
+.no_flamegraph {
+    display:none;
+    text-align:center;
+    margin-left:5px;
+    margin-right:5px;
+}
+
+#threshold_input, #runtime_diff_threshold_input {
+    width:70px;
+}
+
+#off_cpu_scale {
+    width:250px;
+}
+
+.flamegraph_search_results {
+    text-align:center;
+    font-style:italic;
+    margin-bottom:10px;
+    display:none;
+    width:100%;
+}
+
+.linuxperf_flame_graph_window {
+    min-width:750px;
+    width:750px;
+    min-height:200px;
+    height:300px;
+}
+
+.roofline_window {
+    min-width:800px;
+    width:800px;
+    min-height:750px;
+    height:750px;
+}
