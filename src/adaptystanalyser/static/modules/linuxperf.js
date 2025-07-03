@@ -225,10 +225,12 @@ class TimelineWindow extends Window {
             }
 
             if ($.isEmptyObject(parent.getNodeData().general_metrics_dict)) {
-                parent.dom.find('.general_analyses').attr('onclick', '');
+                parent.dom.find('.general_analyses').off('click');
                 parent.dom.find('.general_analyses').attr('class', 'disabled');
             } else {
-                parent.dom.find('.general_analyses').attr('onclick', 'onGeneralAnalysesClick(event)');
+                parent.dom.find('.general_analyses').on('click', (event) => {
+                    parent.onGeneralAnalysesClick(event);
+                });
                 parent.dom.find('.general_analyses').attr('class', 'pointer');
             }
 
@@ -452,6 +454,8 @@ class TimelineWindow extends Window {
     }
 
     onGeneralAnalysesClick(event) {
+        Menu.closeMenu();
+
         let metrics_dict = this.getNodeData().general_metrics_dict;
 
         let items = [
@@ -468,15 +472,26 @@ class TimelineWindow extends Window {
                 item: $(`<div>
              ${v.title}
            </div>`),
-                click_handler: [k, onMenuItemClick]});
+                click_handler: [k, (event) => {
+                    this.onGeneralAnalysisMenuItemClick(event);
+                }],
+                hover: true});
         }
 
         Menu.createMenuWithCustomBlocks(event.pageX, event.pageY, items);
 
         event.preventDefault();
         event.stopPropagation();
+    }
 
-        Menu.closeMenu();
+    onGeneralAnalysisMenuItemClick(event) {
+        let analysis_type = event.data.data;
+
+        if (analysis_type === 'roofline') {
+            new RooflineWindow('body', this.session,
+                               this.node_id, {},
+                               event.pageX, event.pageY);
+        }
     }
 
     onMenuItemClick(event) {
@@ -768,10 +783,11 @@ class FlameGraphWindow extends Window {
         let info = this.getNodeData().roofline_info;
         let result_obj = this.data.result_obj;
         let exists = false;
+        let name = "";
 
         do {
-            let name = window.prompt((exists ? 'This name already exists!\n\n' : '') +
-                                     'What name do you want to give to your new roofline point?');
+            name = window.prompt((exists ? 'This name already exists!\n\n' : '') +
+                                 'What name do you want to give to your new roofline point?');
 
             if (name == undefined || name === "") {
                 return;
@@ -936,12 +952,12 @@ class FlameGraphWindow extends Window {
         this.getNodeData().roofline_dict[name] = [arith_intensity, flops];
 
         for (const v of Object.values(Window.instances)) {
-            if (v.type === 'roofline' &&
-                v.session === this.session &&
+            if (v.getType() === 'linuxperf_roofline' &&
+                v.session.id === this.session.id &&
                 v.node_id === this.node_id) {
                 v.dom.find('.roofline_point_select').append(
                     new Option(name, name));
-                updateRoofline(this.dom, v.data);
+                v.updateRoofline();
             }
         }
     }
@@ -1014,7 +1030,9 @@ class FlameGraphWindow extends Window {
                 options.push(['Add to the roofline plot', [{
                     'node': node,
                     'window': this
-                }, onAddToRooflineClick]]);
+                }, (event) => {
+                    this.onAddToRooflineClick(event);
+                }]]);
             }
 
             let symbol = this.getNodeData().callchain_obj[this.dom.find('.flamegraph_metric').val()][node.data.name];
@@ -1400,45 +1418,61 @@ class RooflineWindow extends Window {
     }
 
     _setup(data, existing_window) {
-        this.dom.find('.roofline_type_select').attr(
-            'onchange', 'onRooflineTypeChange(event, ' +
-                '\'' + this.id + '\')');
-        this.dom.find('.roofline_l1').attr(
-            'onclick', 'onRooflineBoundsChange(\'l1\', \'' +
-                this.id + '\')');
-        this.dom.find('.roofline_l2').attr(
-            'onclick', 'onRooflineBoundsChange(\'l2\', \'' +
-                this.id + '\')');
-        this.dom.find('.roofline_l3').attr(
-            'onclick', 'onRooflineBoundsChange(\'l3\', \'' +
-                this.id + '\')');
-        this.dom.find('.roofline_dram').attr(
-            'onclick', 'onRooflineBoundsChange(\'dram\', \'' +
-                this.id + '\')');
-        this.dom.find('.roofline_fp').attr(
-            'onclick', 'onRooflineBoundsChange(\'fp\', \'' +
-                this.id + '\')');
-        this.dom.find('.roofline_point_delete').attr(
-            'onclick', 'onRooflinePointDeleteClick(event, ' +
-                '\'' + this.id + '\')');
-        this.dom.find('.roofline_point_select').attr(
-            'onchange', 'onRooflinePointChange(event, ' +
-                '\'' + this.id + '\')');
+        this.dom.find('.roofline_type_select').on(
+            'change',
+            (event) => {
+                this.onRooflineTypeChange(event);
+            });
+        this.dom.find('.roofline_l1').on(
+            'click',
+            () => {
+                this.onRooflineBoundsChange('l1');
+            });
+        this.dom.find('.roofline_l2').on(
+            'click',
+            () => {
+                this.onRooflineBoundsChange('l2');
+            });
+        this.dom.find('.roofline_l3').on(
+            'click',
+            () => {
+                this.onRooflineBoundsChange('l3');
+            });
+        this.dom.find('.roofline_dram').on(
+            'click',
+            () => {
+                this.onRooflineBoundsChange('dram');
+            });
+        this.dom.find('.roofline_fp').on(
+            'click',
+            () => {
+                this.onRooflineBoundsChange('fp');
+            });
+        this.dom.find('.roofline_point_delete').on(
+            'click',
+            (event) => {
+                this.onRooflinePointDeleteClick(event);
+            });
+        this.dom.find('.roofline_point_select').on(
+            'change',
+            (event) => {
+                this.onRooflinePointChange(event);
+            });
 
-        if (this.getType() in this.getNodeData().result_cache) {
-            this.data = this.getNodeData().result_cache[type];
-            this.openRooflinePlot(this.getNodeData().result_cache[this.getType()]);
+        if ('roofline' in this.getNodeData().result_cache) {
+            this.data = this.getNodeData().result_cache['roofline'];
+            this.openRooflinePlot();
             this.hideLoading();
         } else {
             $.ajax({
-                url: this.session + '/',
+                url: this.session.id + '/' + this.node_id + '/',
                 method: 'POST',
                 dataType: 'json',
-                data: {general_analysis: type}
+                data: {general_analysis: 'roofline'}
             }).done(ajax_obj => {
-                this.getNodeData().result_cache[type] = ajax_obj;
+                this.getNodeData().result_cache['roofline'] = ajax_obj;
                 this.data = ajax_obj;
-                openRooflinePlot(window_obj, ajax_obj);
+                this.openRooflinePlot();
                 this.hideLoading();
             }).fail(ajax_obj => {
                 window.alert('Could not load the roofline model!');
@@ -1492,7 +1526,7 @@ class RooflineWindow extends Window {
 
             delete this.getNodeData().roofline_dict[cur_val];
 
-            updateRoofline(this.dom, this.data);
+            this.updateRoofline();
         }
     }
 
@@ -1616,7 +1650,7 @@ class RooflineWindow extends Window {
 
     onRooflineBoundsChange(bound) {
         this.data.bounds[bound] = !this.data.bounds[bound];
-        updateRoofline();
+        this.updateRoofline();
     }
 
     onRooflineTypeChange(event) {
@@ -1720,10 +1754,10 @@ class RooflineWindow extends Window {
 
         let turning_x = model.fp_fma.gflops / Math.min(...for_turning_x);
 
-        let container = window_obj.find('.roofline');
+        let container = this.dom.find('.roofline');
 
         this.data.plot_config = {
-            target: '#' + window_id + '_roofline',
+            target: '#' + this.id + '_roofline',
             width: container.width() - 10,
             height: container.height() - 10,
             xAxis: {
