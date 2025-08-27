@@ -4,28 +4,71 @@
 
 // Adaptyst Analyser: a tool for analysing performance analysis results
 
+/**
+ *  Stops further propagation of an event. It may be useful
+ *  e.g. for handling mouse clicks.
+ *
+ *  @param {Object} event Event which propagation should be stopped.
+ */
 function stopPropagation(event) {
     event.stopPropagation();
     event.preventDefault();
 }
 
+/**
+ *  This class represents a performance analysis session.
+ */
 class Session {
+    /**
+     *  Static dictionary storing all instances of a Session
+     *  class under their IDs.
+     *
+     *  @static
+     */
     static instances = {};
 
+    /**
+     *  Constructs a Session object, which is the main
+     *  place for storing all information about a performance
+     *  analysis session.
+     *
+     *  @constructor
+     *  @param {string} id ID of a session as known by the server.
+     *  @param {string} label Human-readable label of a session.
+     */
     constructor(id, label) {
         this.id = id;
         this.label = label;
-        this.node_data = {};
+        this.module_data = {};
         Session.instances[id] = this;
     }
 }
 
+/**
+ *  This abstract class represents an internal window.
+ *
+ *  If you want to display a window in Adaptyst Analyser,
+ *  you must implement a new class inheriting from this class
+ *  and implementing its abstract methods.
+ */
 class Window {
+    /**
+     *  Static dictionary storing all instances of a Window
+     *  class (or one of its subclasses) under their IDs as returned
+     *  by `getId()`.
+     *
+     *  @static
+     */
     static instances = {};
-    static current_focused_id = undefined;
-    static largest_z_index = 0;
 
-    static changeFocus(window_id) {
+    // Private, not meant to be used by any external code.
+    static #current_focused_id = undefined;
+
+    // Private, not meant to be used by any external code.
+    static #largest_z_index = 0;
+
+    // Private, not meant to be called by any external code.
+    static #changeFocus(window_id) {
         if (window_id === undefined) {
             let keys = Object.keys(Window.instances);
 
@@ -46,8 +89,8 @@ class Window {
         let window = Window.instances[window_id];
         let window_header = window.dom.find('.window_header');
 
-        if (Window.current_focused_id !== window_id) {
-            if (Window.largest_z_index >= 10000) {
+        if (Window.#current_focused_id !== window_id) {
+            if (Window.#largest_z_index >= 10000) {
                 let z_index_arr = [];
 
                 for (const w of Object.values(Window.instances)) {
@@ -72,10 +115,10 @@ class Window {
                 }
 
                 window.dom.css('z-index', index);
-                Window.largest_z_index = index;
+                Window.#largest_z_index = index;
             } else {
-                Window.largest_z_index += 1;
-                window.dom.css('z-index', Window.largest_z_index);
+                Window.#largest_z_index += 1;
+                window.dom.css('z-index', Window.#largest_z_index);
             }
 
             window_header.css('background-color', 'black');
@@ -93,11 +136,12 @@ class Window {
                 }
             }
 
-            Window.current_focused_id = window_id;
+            Window.#current_focused_id = window_id;
             Window.instances[window_id].last_focus = Date.now();
         }
     }
 
+    // Private, not meant to be called by any external code.
     static onResize(windows) {
         for (const window of windows) {
             let target = window.target;
@@ -130,7 +174,33 @@ class Window {
         }
     }
 
-    constructor(parent, session, node_id, data, x, y) {
+    /**
+     *  Constructs a Window object and displays a window
+     *  corresponding to the object. All subclasses
+     *  must call this constructor.
+     *
+     *  @constructor
+     *  @param {Object} [session] `Session` object corresponding
+     *  to a window. This is provided by a parameter of
+     *  `createRootWindow()`. If undefined, `getModuleData()` will
+     *  always return `undefined`.
+     *  @param {string} [node_id] The ID of a node corresponding
+     *  to a window. This is provided by a parameter of
+     *  `createRootWindow()`. If undefined, `getModuleData()` will
+     *  always return `undefined`.
+     *  @param {string} [module_name] The name of a module within
+     *  a node corresponding to a window. If undefined, `getModuleData()`
+     *  will always return `undefined`.
+     *  @param [data] Arbitrary data to be passed to `_setup()`.
+     *  @param {int} [x] x-part of the initial upper-left corner
+     *  position of a window. If undefined, the value of `y` will
+     *  be ignored and the window will be centered.
+     *  @param {int} [y] y-part of the initial upper-left corner
+     *  position of a window. If undefined, the value of `x` will
+     *  be ignored and the window will be centered.
+     */
+    constructor(session, node_id,
+                module_name, data, x, y) {
         let index = 0;
         let id = undefined;
 
@@ -155,11 +225,12 @@ class Window {
         this.id = id;
         this.session = session;
         this.node_id = node_id;
+        this.module_name = module_name;
         this.data = {};
         this.being_resized = false;
         this.collapsed = false;
         this.last_focus = Date.now();
-        this.dom = this.createWindowDOM();
+        this.dom = this.#createWindowDOM();
 
         if (x !== undefined && y !== undefined) {
             this.dom.css('left', x + 'px');
@@ -173,18 +244,64 @@ class Window {
         this.first_resize_call = true;
         new ResizeObserver(Window.onResize).observe(this.dom[0]);
 
-        this.setup(parent, data);
+        this.#setup(data);
     }
 
+    /**
+     *  Gets the ID of a window.
+     *
+     *  @return {string} ID of a window.
+     */
+    getId() {
+        return this.id;
+    }
+
+    /**
+     *  Gets the type of a window. This is used in the ID
+     *  of a window, an HTML class of the window
+     *  (i.e. `<type>_window`), and an HTML class of
+     *  the window content (i.e. `<type>_content`).
+     *
+     *  @abstract
+     *  @return {string} Type of a window.
+     */
     getType() {
-        // Can be implemented by Window's children
+        throw new Error('This is an abstract method!');
     }
 
+    /**
+     *  Gets the content of a window in form of an HTML code.
+     *
+     *  Window header and border rendering along with basic window
+     *  operations except resizing is fully handled by Adaptyst
+     *  Analyser and you shouldn't implement it yourself. Resizing
+     *  is partially handled by Adaptyst Analyser and should also 
+     *  not be implemented here, see `startResize()` and
+     *  `finishResize()` instead.
+     *
+     *  A padding of 5 pixels is applied to the content of
+     *  all windows in Adaptyst Analyser.
+     *
+     *  @abstract
+     *  @return {string} HTML code of the content of a window.
+     */
     getContentCode() {
-        // Can be implemented by Window's children
+        throw new Error('This is an abstract method!');
     }
 
-    createWindowDOM() {
+    /**
+     *  Gets the content of a window in form of a jQuery object.
+     *  The return value of this function is based on your implementation
+     *  of `getContentCode()`.
+     *
+     *  @return {Object} jQuery object representing the content of a window.
+     */
+    getContent() {
+        return this.dom.find('.window_content');
+    }
+
+    // Private, not meant to be called by any external code.
+    #createWindowDOM() {
         const window_header = `
 <div class="window_header">
   <span class="window_title"></span>
@@ -242,10 +359,14 @@ class Window {
         return root;
     }
 
+    /**
+     *  Focuses a window.
+     */
     focus() {
-        Window.changeFocus(this.id);
+        Window.#changeFocus(this.id);
     }
 
+    // Private, not meant to be called by any external code.
     onMouseUp() {
         if (this.being_resized) {
             this.finishResize();
@@ -253,14 +374,25 @@ class Window {
         }
     }
 
+    /**
+     *  Called when a user starts resizing a window.
+     *
+     *  @abstract
+     */
     startResize() {
-        // Can be implemented by Window's children
+        throw new Error('This is an abstract method!');
     }
 
+    /**
+     *  Called when a user finishes resizing a window.
+     *
+     *  @abstract
+     */
     finishResize() {
-        // Can be implemented by Window's children
+        throw new Error('This is an abstract method!');
     }
 
+    // Private, not meant to be called by any external code.
     startDrag(event) {
         stopPropagation(event);
         this.focus();
@@ -287,6 +419,7 @@ class Window {
         });
     }
 
+    // Private, not meant to be called by any external code.
     onRefreshClick(event) {
         stopPropagation(event);
 
@@ -297,14 +430,29 @@ class Window {
         this.setup();
     }
 
+    /**
+     *  Called when a user refreshes a window, before the proper
+     *  refresh process with the content resetup takes place.
+     *
+     *  @abstract
+     */
     prepareRefresh() {
-        // Can be implemented by Window's children
+        throw new Error('This is an abstract method!');
     }
 
+    /**
+     *  Called when a user closes a window, before it is actually
+     *  closed.
+
+     *  @abstract
+     */
     prepareClose() {
-        // Can be implemented by Window's children
+        throw new Error('This is an abstract method!');
     }
 
+    /**
+     *  Shows the loading indicator in a window.
+     */
     showLoading() {
         this.loading_jquery = $('#loading').clone();
         this.loading_jquery.removeAttr('id');
@@ -313,11 +461,15 @@ class Window {
         this.loading_jquery.show();
     }
 
+    /**
+     *  Hides the loading indicator in a window.
+     */
     hideLoading() {
         this.loading_jquery.hide();
     }
 
-    setup(parent, data) {
+    // Private, not meant to be called by any external code.
+    #setup(data) {
         let existing_window = false;
 
         if (data === undefined) {
@@ -336,7 +488,7 @@ class Window {
         this.showLoading();
 
         if (!existing_window) {
-            this.dom.appendTo(parent);
+            this.dom.appendTo('body');
             this.focus();
         }
 
@@ -344,14 +496,35 @@ class Window {
         this._setup(data, existing_window);
     }
 
+    /**
+     *  Gets the title of a window.
+
+     *  @abstract
+     *  @return {string} Title of a window.
+     */
     getTitle() {
-        // Can be implemented by Window's children
+        throw new Error('This is an abstract method!');
     }
 
+    /**
+     *  Sets up a window. This is always called when the window is opened or
+     *  refreshed. Use `getContent()` to get a jQuery object for manipulating
+     *  the window content.
+     *
+     *  **Important:** This function must call `hideLoading()` at some point.
+     *  Otherwise, there will be a clearly-visible loading indicator in
+     *  the window.
+     *
+     *  @abstract
+     *  @param data Arbitrary data passed to the constructor, e.g.
+     *  a dictionary.
+     *  @param {bool} existing_window Whether a window is already displayed.
+     */
     _setup(data, existing_window) {
-        // Can be implemented by Window's children
+        throw new Error('This is an abstract method!');
     }
 
+    // Private, not meant to be called by any external code.
     close(event) {
         stopPropagation(event);
 
@@ -359,17 +532,40 @@ class Window {
 
         this.dom.remove();
         delete Window.instances[this.id];
-        Window.changeFocus();
+        Window.#changeFocus();
     }
 
-    getNodeData() {
-        if (this.session === undefined) {
+    /**
+     *  Gets a modifiable dictionary storing arbitrary
+     *  data related to a corresponding module of a node.
+     *
+     *  The object must have been constructed with defined
+     *  values of `session`, `node_id`, and `module_name`.
+     *  Otherwise, this function returns `undefined`.
+     *
+     *  @return {Object} Modifiable dictionary or
+     *  `undefined` if the object is not constructed with
+     *  `session`, `node_id`, and `module_name`.
+     */
+    getModuleData() {
+        if (this.session == undefined ||
+            this.node_id == undefined ||
+            this.module_name == undefined) {
             return undefined;
         }
 
-        return this.session.node_data[this.node_id];
+        if (this.session.module_data[this.node_id] == undefined) {
+            this.session.module_data[this.node_id] = {};
+        }
+
+        if (this.session.module_data[this.node_id][this.module_name] == undefined) {
+            this.session.module_data[this.node_id][this.module_name] = {};
+        }
+
+        return this.session.module_data[this.node_id][this.module_name];
     }
 
+    // Private, not meant to be called by any external code.
     onVisibilityClick(event) {
         stopPropagation(event);
 
@@ -399,7 +595,30 @@ class Window {
     }
 }
 
+/**
+ *  This class contains static methods for managing menus.
+ *  It is not meant to be constructed.
+ *
+ *  **Only one menu can be open at a time.**
+ */
 class Menu {
+    /**
+     *  Creates and displays a menu.
+     *
+     *  @static
+     *  @param {int} x x-part of the upper-left corner position
+     *  of a menu.
+     *  @param {int} y y-part of the upper-left corner position
+     *  of a menu.
+     *  @param {Array} options Array of menu items of type
+     *  `[k, v]`, where `k` is the label of a menu item to be
+     *  displayed and `v` is of form `[<arbitrary data>,
+     *  <click event handler>]`. Click event handlers must
+     *  accept `event` (corresponding to a JavaScript
+     *  click event object) as the first argument. `<arbitrary
+     *  data>` will be accessible in a click handler through
+     *  `event.data.data`.
+     */
     static createMenu(x, y, options) {
         let menu = $('<div id="menu" class="menu_block"></div>');
         let first = true;
@@ -453,6 +672,24 @@ class Menu {
         $('body').append(menu);
     }
 
+    /**
+     *  Creates and displays a menu with custom-made blocks.
+     *
+     *  @static
+     *  @param {int} x x-part of the upper-left corner position
+     *  of a menu.
+     *  @param {int} y y-part of the upper-left corner position
+     *  of a menu.
+     *  @param {Array} blocks Array of custom menu items of type
+     *  `{item: <item>, hover: <hover>, click_handler: [<arbitrary
+     *  data>, <click event handler>]}`, where `<item>` is
+     *  a jQuery object representing a custom menu item element
+     *  (e.g. `$('<div>Hello World!</div>')`), `<hover>` is a
+     *  boolean indicating whether the item should be highlighted
+     *  on hover, and `[<arbitrary data>, <click event handler>]`
+     *  is the same as in `createMenu()`. `<hover>` is optional,
+     *  its default value is false.
+     */
     static createMenuWithCustomBlocks(x, y, blocks) {
         Menu.closeMenu();
 
@@ -513,11 +750,15 @@ class Menu {
         $('body').append(menu);
     }
 
+    /**
+     *  Closes a menu.
+     */
     static closeMenu() {
         $('#menu').remove();
     }
 }
 
+// Private, not meant to be used by any external code.
 class SettingsWindow extends Window {
     getType() {
         return 'settings';
@@ -582,12 +823,8 @@ class SettingsWindow extends Window {
     }
 }
 
+// Private, not meant to be called by any external code.
 function loadCurrentSession() {
-    // $('#off_cpu_sampling_warning').hide();
-    // $('#no_off_cpu_warning').hide();
-    // $('#glossary').hide();
-    // $('#general_analyses').attr('class', 'disabled');
-    // $('#general_analyses').attr('onclick', '');
     $('#refresh').attr('class', 'disabled');
     $('#refresh').attr('onclick', '');
     $('#block').html('');
@@ -611,7 +848,7 @@ function loadCurrentSession() {
             view.on('doubleClickNode', function(node) {
                 node.event.preventSigmaDefault();
                 let backend_name = graph.getNodeAttribute(node.node, 'backend');
-                import('./modules/' + backend_name + '.js')
+                import('./modules/' + backend_name + '/backend.js')
                     .then(function(backend) {
                         backend.createRootWindow(node.node, session);
                     });
@@ -637,24 +874,12 @@ function loadCurrentSession() {
 
 $(document).on('change', '#results_combobox', loadCurrentSession);
 
+// Private, not meant to be called by any external code.
 function onSessionRefreshClick(event) {
     loadCurrentSession();
 }
 
+// Private, not meant to be called by any external code.
 function onSettingsClick(event) {
-    new SettingsWindow('body', undefined, undefined, {});
-    // $('#settings_block').css('top', event.clientY);
-    // $('#settings_block').css('left', event.clientX);
-    // $('#settings_block').css('z-index', '10001');
-    // $('#settings_block').show();
-
-    // let width = $('#settings_block').outerWidth();
-
-    // if (event.clientX + width > $(window).outerWidth() - 20) {
-    //     $('#settings_block').css(
-    //         'left', Math.max(0, event.clientX - width));
-    // }
-
-    // event.preventDefault();
-    // event.stopPropagation();
+    new SettingsWindow(undefined, undefined, undefined, {});
 }
