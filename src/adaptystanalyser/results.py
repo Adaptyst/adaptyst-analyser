@@ -178,7 +178,8 @@ class PerformanceAnalysisResults:
 
         for entity in self._system['entities'].values():
             for node, settings in entity['nodes'].items():
-                self._node_backends[node] = settings['backend']
+                self._node_backends[node] = [x['name']
+                                             for x in settings['modules']]
 
     def get_backend_name(self, node):
         return self._node_backends[node]
@@ -218,7 +219,7 @@ class PerformanceAnalysisResults:
                             'size': 50,
                             'color': entities[entity],
                             'entity': entity,
-                            'backend': v['backend']
+                            'backends': [x['name'] for x in v['modules']]
                         }
                     }
                     for entity in self._system['entities'].keys()

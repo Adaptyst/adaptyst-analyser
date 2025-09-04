@@ -845,18 +845,34 @@ function loadCurrentSession() {
             let view = new Sigma(graph, $('#block')[0], {
 
             });
-            view.on('doubleClickNode', function(node) {
+            view.on('doubleClickNode', (node) => {
                 node.event.preventSigmaDefault();
-                let backend_name = graph.getNodeAttribute(node.node, 'backend');
-                import('./modules/' + backend_name + '/backend.js')
-                    .then(function(backend) {
-                        backend.createRootWindow(node.node, session);
-                    });
+                let backend_names = graph.getNodeAttribute(node.node, 'backends');
+                let options = [];
+
+                for (let name of backend_names) {
+                    options.push([name,
+                                  [{
+                                      backend_name: name,
+                                      node: node.node,
+                                      session: session
+                                  }, (event) => {
+                                      import('./modules/' + event.data.data.backend_name + '/backend.js')
+                                          .then(function(backend) {
+                                              backend.createRootWindow(event.data.data.node,
+                                                                       event.data.data.session);
+                                          });
+                                  }]]);
+                }
+
+                Menu.createMenu(node.event.original.pageX,
+                                node.event.original.pageY,
+                                options);
             });
             $('#loading').hide();
             $('#footer_text').text('You can see a graph describing your computer system. ' +
-                                   'Double-click any node to open an internal window ' +
-                                   'with its detailed analysis as implemented by its backend.');
+                                   'Double-click any node and select a module to open an internal window ' +
+                                   'with a detailed analysis of the node done by the module.');
             $('#refresh').attr('class', '');
             $('#refresh').attr('onclick', 'loadCurrentSession()');
         }).fail(function(ajax_obj) {
