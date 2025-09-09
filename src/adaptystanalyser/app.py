@@ -7,7 +7,7 @@ import traceback
 import re
 from flask import Flask, render_template, request
 from pathlib import Path
-from . import PerformanceAnalysisResults, Identifier
+from . import PerformanceAnalysisResults
 from importlib.metadata import version
 from importlib import import_module
 
@@ -33,9 +33,9 @@ d3_flamegraph_css = (static_path / 'd3-flamegraph.css').read_text()
 
 backends = []
 
-for p in static_path.glob('modules/*_settings.html'):
+for p in static_path.glob('modules/*/settings.html'):
     backend = {}
-    backend['name'] = re.search(r'^(.+)_settings\.html$', p.name).group(1)
+    backend['name'] = p.parent.name
     backend['settings_code'] = p.read_text()
     backends.append(backend)
 
@@ -51,20 +51,17 @@ def get(identifier):
         return '', 404
 
 
-@app.post('/<identifier>/<node>/')
-def post(identifier, node):
+@app.post('/<identifier>/<entity>/<node>/<module>')
+def post(identifier, entity, node, module):
     try:
-        results = PerformanceAnalysisResults(
-            app.config['PERFORMANCE_ANALYSIS_STORAGE'],
-            identifier)
-        backend_name = results.get_backend_name(node)
-
-        if backend_name is None:
+        try:
+            backend = import_module(f'adaptystanalyser.modules.{module}')
+        except ModuleNotFoundError:
+            traceback.print_exc()
             return '', 404
 
-        backend = import_module(f'adaptystanalyser.modules.{backend_name}')
         return backend.process(app.config['PERFORMANCE_ANALYSIS_STORAGE'],
-                               identifier, node, request.values)
+                               identifier, entity, node, request.values)
     except ValueError:
         traceback.print_exc()
         return '', 404

@@ -181,9 +181,6 @@ class PerformanceAnalysisResults:
                 self._node_backends[node] = [x['name']
                                              for x in settings['modules']]
 
-    def get_backend_name(self, node):
-        return self._node_backends[node]
-
     def get_system_graph(self):
         used_colours = set()
         entities = {}

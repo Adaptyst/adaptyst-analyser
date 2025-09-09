@@ -1,5 +1,4 @@
 import re
-import sys
 import json
 import csv
 from zipfile import ZipFile
@@ -11,18 +10,10 @@ from collections import deque, defaultdict
 
 class LinuxPerfResults:
     def __init__(self, storage: str, identifier: str,
-                 node: str):
-        path = Path(storage) / identifier / 'system'
-        node_paths = list(path.glob(f'*/{node}'))
-
-        if len(node_paths) == 0:
-            raise RuntimeError(
-                f'Node with ID {node} does not exist')
-        elif len(node_paths) > 1:
-            raise RuntimeError(
-                f'There is more than one node with ID {node}')
-
-        self._path = node_paths[0]
+                 entity: str, node: str):
+        self._entity_path = Path(storage) / identifier / 'system' / \
+            entity
+        self._path = self._entity_path / node / 'linuxperf'
 
         self._threads_metadata = None
 
@@ -101,10 +92,8 @@ class LinuxPerfResults:
                     mode='r') as f:
                 self._sources = json.load(f)
 
-        if (self._path / 'src.zip').exists():
-            self._source_zip_path = self._path / 'src.zip'
-        elif (self._path.parent / 'src.zip').exists():
-            self._source_zip_path = self._path.parent / 'src.zip'
+        if (self._entity_path / 'src.zip').exists():
+            self._source_zip_path = self._entity_path / 'src.zip'
 
         if self._source_zip_path is not None:
             src_index_path = self._path / 'src_index.json'
@@ -658,13 +647,14 @@ class LinuxPerfResults:
                 return f.read()
 
 
-def process(storage, identifier, node, data):
+def process(storage, identifier, entity, node, data):
     if 'thread_tree' in data or \
        'general_analysis' in data or \
        ('pid' in data and 'tid' in data and
         'threshold' in data) or \
        'callchain' in data or 'src' in data:
-        results = LinuxPerfResults(storage, identifier, node)
+        results = LinuxPerfResults(storage, identifier,
+                                   entity, node)
 
         if 'thread_tree' in data:
             return results.get_json_tree()

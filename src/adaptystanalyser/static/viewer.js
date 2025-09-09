@@ -39,7 +39,6 @@ class Session {
     constructor(id, label) {
         this.id = id;
         this.label = label;
-        this.module_data = {};
         Session.instances[id] = this;
     }
 }
@@ -182,16 +181,17 @@ class Window {
      *  @constructor
      *  @param {Object} [session] `Session` object corresponding
      *  to a window. This is provided by a parameter of
-     *  `createRootWindow()`. If undefined, `getModuleData()` will
-     *  always return `undefined`.
+     *  `createRootWindow()`. It can be undefined.
+     *  @param {string} [entity_id] The ID of an entity corresponding
+     *  to a window. This is provided by a parameter of
+     *  `createRootWindow()`. It can be undefined.
      *  @param {string} [node_id] The ID of a node corresponding
      *  to a window. This is provided by a parameter of
-     *  `createRootWindow()`. If undefined, `getModuleData()` will
-     *  always return `undefined`.
+     *  `createRootWindow()`. It can be undefined.
      *  @param {string} [module_name] The name of a module within
-     *  a node corresponding to a window. If undefined, `getModuleData()`
-     *  will always return `undefined`.
+     *  a node corresponding to a window. It can be undefined.
      *  @param [data] Arbitrary data to be passed to `_setup()`.
+     *  It can be undefined.
      *  @param {int} [x] x-part of the initial upper-left corner
      *  position of a window. If undefined, the value of `y` will
      *  be ignored and the window will be centered.
@@ -199,7 +199,7 @@ class Window {
      *  position of a window. If undefined, the value of `x` will
      *  be ignored and the window will be centered.
      */
-    constructor(session, node_id,
+    constructor(session, entity_id, node_id,
                 module_name, data, x, y) {
         let index = 0;
         let id = undefined;
@@ -224,6 +224,7 @@ class Window {
 
         this.id = id;
         this.session = session;
+        this.entity_id = entity_id;
         this.node_id = node_id;
         this.module_name = module_name;
         this.data = {};
@@ -244,7 +245,11 @@ class Window {
         this.first_resize_call = true;
         new ResizeObserver(Window.onResize).observe(this.dom[0]);
 
-        this.#setup(data);
+        if (data === undefined) {
+            this.#setup({});
+        } else {
+            this.#setup(data);
+        }
     }
 
     /**
@@ -275,7 +280,7 @@ class Window {
      *  Window header and border rendering along with basic window
      *  operations except resizing is fully handled by Adaptyst
      *  Analyser and you shouldn't implement it yourself. Resizing
-     *  is partially handled by Adaptyst Analyser and should also 
+     *  is partially handled by Adaptyst Analyser and should also
      *  not be implemented here, see `startResize()` and
      *  `finishResize()` instead.
      *
@@ -427,7 +432,7 @@ class Window {
 
         this.dom.find('.window_content').html(this.getContentCode());
         this.data = {}
-        this.setup();
+        this.#setup();
     }
 
     /**
@@ -533,36 +538,6 @@ class Window {
         this.dom.remove();
         delete Window.instances[this.id];
         Window.#changeFocus();
-    }
-
-    /**
-     *  Gets a modifiable dictionary storing arbitrary
-     *  data related to a corresponding module of a node.
-     *
-     *  The object must have been constructed with defined
-     *  values of `session`, `node_id`, and `module_name`.
-     *  Otherwise, this function returns `undefined`.
-     *
-     *  @return {Object} Modifiable dictionary or
-     *  `undefined` if the object is not constructed with
-     *  `session`, `node_id`, and `module_name`.
-     */
-    getModuleData() {
-        if (this.session == undefined ||
-            this.node_id == undefined ||
-            this.module_name == undefined) {
-            return undefined;
-        }
-
-        if (this.session.module_data[this.node_id] == undefined) {
-            this.session.module_data[this.node_id] = {};
-        }
-
-        if (this.session.module_data[this.node_id][this.module_name] == undefined) {
-            this.session.module_data[this.node_id][this.module_name] = {};
-        }
-
-        return this.session.module_data[this.node_id][this.module_name];
     }
 
     // Private, not meant to be called by any external code.
@@ -709,14 +684,14 @@ class Menu {
             }
 
             if (v.click_handler === undefined) {
-                v.item.on('click', function(event) {
+                v.item.on('click', event => {
                     stopPropagation(event);
                 });
             } else {
                 v.item.on('click', {
                     'data': v.click_handler[0],
                     'handler': v.click_handler[1]
-                }, function(event) {
+                }, event => {
                     stopPropagation(event);
                     Menu.closeMenu();
 
@@ -848,18 +823,23 @@ function loadCurrentSession() {
             view.on('doubleClickNode', (node) => {
                 node.event.preventSigmaDefault();
                 let backend_names = graph.getNodeAttribute(node.node, 'backends');
+                let entity = graph.getNodeAttribute(node.node, 'entity');
                 let options = [];
 
                 for (let name of backend_names) {
                     options.push([name,
                                   [{
                                       backend_name: name,
+                                      entity: entity,
                                       node: node.node,
                                       session: session
                                   }, (event) => {
+                                      $('<link type="text/css" rel="stylesheet" href="/static/' +
+                                        'modules/' + event.data.data.backend_name + '/backend.css" />').appendTo('head');
                                       import('./modules/' + event.data.data.backend_name + '/backend.js')
                                           .then(function(backend) {
-                                              backend.createRootWindow(event.data.data.node,
+                                              backend.createRootWindow(event.data.data.entity,
+                                                                       event.data.data.node,
                                                                        event.data.data.session);
                                           });
                                   }]]);
