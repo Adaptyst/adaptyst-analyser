@@ -67,80 +67,6 @@ class Window {
     static #largest_z_index = 0;
 
     // Private, not meant to be called by any external code.
-    static #changeFocus(window_id) {
-        if (window_id === undefined) {
-            let keys = Object.keys(Window.instances);
-
-            if (keys.length === 0) {
-                return;
-            }
-
-            keys.sort(function comp(a, b) {
-                return Window.instances[b].last_focus - Window.instances[a].last_focus;
-            });
-            window_id = keys[0];
-        }
-
-        if (!(window_id in Window.instances)) {
-            return;
-        }
-
-        let window = Window.instances[window_id];
-        let window_header = window.dom.find('.window_header');
-
-        if (Window.#current_focused_id !== window_id) {
-            if (Window.#largest_z_index >= 10000) {
-                let z_index_arr = [];
-
-                for (const w of Object.values(Window.instances)) {
-                    z_index_arr.push({'index': w.dom.css('z-index'),
-                                      'id': w.id});
-                }
-
-                z_index_arr.sort((a, b) => {
-                    if (a.index === undefined) {
-                        return -1;
-                    } else if (b.index === undefined) {
-                        return 1;
-                    } else {
-                        return a.index - b.index;
-                    }
-                });
-
-                let index = 1;
-                for (const obj of z_index_arr) {
-                    $('#' + obj.id).css('z-index', index);
-                    index += 1;
-                }
-
-                window.dom.css('z-index', index);
-                Window.#largest_z_index = index;
-            } else {
-                Window.#largest_z_index += 1;
-                window.dom.css('z-index', Window.#largest_z_index);
-            }
-
-            window_header.css('background-color', 'black');
-            window_header.css('color', 'white');
-            window_header.css('fill', 'white');
-
-            for (const w of Object.values(Window.instances)) {
-                if (w.id !== window_id) {
-                    let unfocused_window = w.dom;
-                    let unfocused_header = unfocused_window.find('.window_header');
-
-                    unfocused_header.css('background-color', 'lightgray');
-                    unfocused_header.css('color', 'black');
-                    unfocused_header.css('fill', 'black');
-                }
-            }
-
-            Window.#current_focused_id = window_id;
-            Window.instances[window_id].last_focus = Date.now();
-        }
-    }
-
-    // Private, not meant to be called by any external code.
     static onResize(windows) {
         for (const window of windows) {
             let target = window.target;
@@ -168,10 +94,27 @@ class Window {
                 target.style.top = position.top + 'px';
                 target.style.left = position.left + 'px';
 
-                Window.instances[window_id].startResize();
+                Window.instances[window_id].triggerResize();
             }
         }
     }
+
+    #id;
+    #session;
+    #entity_id;
+    #node_id;
+    #data;
+    #module_name;
+    #being_resized;
+    #collapsed;
+    #last_focus;
+    #dom;
+    #first_resize_call;
+    #loading_jquery;
+    #setup_data;
+    #min_height;
+    #last_height;
+    #content;
 
     /**
      *  Constructs a Window object and displays a window
@@ -222,28 +165,28 @@ class Window {
 
         Window.instances[id] = this;
 
-        this.id = id;
-        this.session = session;
-        this.entity_id = entity_id;
-        this.node_id = node_id;
-        this.module_name = module_name;
-        this.data = {};
-        this.being_resized = false;
-        this.collapsed = false;
-        this.last_focus = Date.now();
-        this.dom = this.#createWindowDOM();
+        this.#id = id;
+        this.#session = session;
+        this.#entity_id = entity_id;
+        this.#node_id = node_id;
+        this.#data = {};
+        this.#module_name = module_name;
+        this.#being_resized = false;
+        this.#collapsed = false;
+        this.#last_focus = Date.now();
+        this.#dom = this.#createWindowDOM();
 
         if (x !== undefined && y !== undefined) {
-            this.dom.css('left', x + 'px');
-            this.dom.css('top', y + 'px');
+            this.#dom.css('left', x + 'px');
+            this.#dom.css('top', y + 'px');
         } else {
-            this.dom.css('top', '50%');
-            this.dom.css('left', '50%');
-            this.dom.css('transform', 'translate(-50%, -50%)');
+            this.#dom.css('top', '50%');
+            this.#dom.css('left', '50%');
+            this.#dom.css('transform', 'translate(-50%, -50%)');
         }
 
-        this.first_resize_call = true;
-        new ResizeObserver(Window.onResize).observe(this.dom[0]);
+        this.#first_resize_call = true;
+        new ResizeObserver(Window.onResize).observe(this.#dom[0]);
 
         if (data === undefined) {
             this.#setup({});
@@ -253,12 +196,60 @@ class Window {
     }
 
     /**
+     *  Gets the last time a window was focused.
+     *
+     *  @return Last time a window was focused,
+     *  as a number representing a Unix timestamp in
+     *  milliseconds.
+     */
+    getLastFocusTime() {
+        return this.#last_focus;
+    }
+
+    /**
      *  Gets the ID of a window.
      *
      *  @return {string} ID of a window.
      */
     getId() {
-        return this.id;
+        return this.#id;
+    }
+
+    /**
+     *  Gets the entity ID of a window.
+     *
+     *  @return {string} Entity ID of a window.
+     */
+    getEntityId() {
+        return this.#entity_id;
+    }
+
+    /**
+     *  Gets the node ID of a window.
+     *
+     *  @return {string} Node ID of a window.
+     */
+    getNodeId() {
+        return this.#node_id;
+    }
+
+    /**
+     *  Gets the dictionary of a window. It can be
+     *  filled with arbitrary data.
+     *
+     *  @return {Object} Dictionary of a window.
+     */
+    getData() {
+        return this.#data;
+    }
+
+    /**
+     *  Gets the performance session a window is part of.
+     *
+     *  @return {Object} Session of a window.
+     */
+    getSession() {
+        return this.#session;
     }
 
     /**
@@ -302,7 +293,11 @@ class Window {
      *  @return {Object} jQuery object representing the content of a window.
      */
     getContent() {
-        return this.dom.find('.window_content');
+        if (this.#content === undefined) {
+            this.#content = this.#dom.find('.window_content');
+        }
+
+        return this.#content;
     }
 
     // Private, not meant to be called by any external code.
@@ -350,16 +345,16 @@ class Window {
 
         root.append(content);
 
-        root.attr('id', this.id);
-        root.attr('onclick', `Window.instances['${this.id}'].focus()`);
-        root.attr('onmouseup', `Window.instances['${this.id}'].onMouseUp()`);
-        root.find('.window_header').attr('onmousedown', `Window.instances['${this.id}'].startDrag(event)`);
+        root.attr('id', this.#id);
+        root.attr('onclick', `Window.instances['${this.#id}'].focus()`);
+        root.attr('onmouseup', `Window.instances['${this.#id}'].onMouseUp()`);
+        root.find('.window_header').attr('onmousedown', `Window.instances['${this.#id}'].startDrag(event)`);
         root.find('.window_refresh').attr(
-            'onclick', `Window.instances['${this.id}'].onRefreshClick(event)`);
+            'onclick', `Window.instances['${this.#id}'].onRefreshClick(event)`);
         root.find('.window_visibility').attr(
-            'onclick', `Window.instances['${this.id}'].onVisibilityClick(event)`);
+            'onclick', `Window.instances['${this.#id}'].onVisibilityClick(event)`);
         root.find('.window_close').attr(
-            'onclick', `Window.instances['${this.id}'].close(event)`);
+            'onclick', `Window.instances['${this.#id}'].close(event)`);
 
         return root;
     }
@@ -368,21 +363,86 @@ class Window {
      *  Focuses a window.
      */
     focus() {
-        Window.#changeFocus(this.id);
+        let window_header = this.#dom.find('.window_header');
+
+        if (Window.#current_focused_id !== this.#id) {
+            if (Window.#largest_z_index >= 10000) {
+                let z_index_arr = [];
+
+                for (const w of Object.values(Window.instances)) {
+                    z_index_arr.push({'index': w.getZIndex(),
+                                      'id': w.getId()});
+                }
+
+                z_index_arr.sort((a, b) => {
+                    if (a.index === undefined) {
+                        return -1;
+                    } else if (b.index === undefined) {
+                        return 1;
+                    } else {
+                        return a.index - b.index;
+                    }
+                });
+
+                let index = 1;
+                for (const obj of z_index_arr) {
+                    $('#' + obj.id).css('z-index', index);
+                    index += 1;
+                }
+
+                this.#dom.css('z-index', index);
+                Window.#largest_z_index = index;
+            } else {
+                Window.#largest_z_index += 1;
+                this.#dom.css('z-index', Window.#largest_z_index);
+            }
+
+            window_header.css('background-color', 'black');
+            window_header.css('color', 'white');
+            window_header.css('fill', 'white');
+
+            for (const w of Object.values(Window.instances)) {
+                if (w.getId() !== this.getId()) {
+                    w.unfocus();
+                }
+            }
+
+            Window.#current_focused_id = this.getId();
+            this.#last_focus = Date.now();
+        }
+    }
+
+    /**
+     *  Unfocuses a window.
+     */
+    unfocus() {
+        let unfocused_header = this.#dom.find('.window_header');
+        unfocused_header.css('background-color', 'lightgray');
+        unfocused_header.css('color', 'black');
+        unfocused_header.css('fill', 'black');
     }
 
     // Private, not meant to be called by any external code.
     onMouseUp() {
-        if (this.being_resized) {
+        if (this.#being_resized) {
             this.finishResize();
-            this.being_resized = false;
+            this.#being_resized = false;
         }
+    }
+
+    /**
+     *  Triggers window resizing event-wise.
+     */
+    triggerResize() {
+        this.#being_resized = this.startResize();
     }
 
     /**
      *  Called when a user starts resizing a window.
      *
      *  @abstract
+     *  @return {bool} Whether finishResize() should be
+     *  called after resizing is complete.
      */
     startResize() {
         throw new Error('This is an abstract method!');
@@ -402,7 +462,7 @@ class Window {
         stopPropagation(event);
         this.focus();
 
-        let dragged = document.getElementById(this.id);
+        let dragged = document.getElementById(this.#id);
         let startX = event.offsetX;
         let startY = event.offsetY;
 
@@ -428,20 +488,33 @@ class Window {
     onRefreshClick(event) {
         stopPropagation(event);
 
-        this.prepareRefresh();
+        this.prepareRefresh(this.#setup_data);
 
-        this.dom.find('.window_content').html(this.getContentCode());
-        this.data = {}
+        this.#dom.find('.window_content').html(this.getContentCode());
         this.#setup();
+    }
+
+    /**
+     *  Gets the value of the z-index CSS property of a window.
+     *
+     *  @return Value of z-index of a window.
+     */
+    getZIndex() {
+        return this.#dom.css('z-index');
     }
 
     /**
      *  Called when a user refreshes a window, before the proper
      *  refresh process with the content resetup takes place.
      *
+     *  The old window content is still available when this
+     *  method is called.
+     *
      *  @abstract
+     *  @param data Arbitrary data that have been passed to the
+     *  constructor and will be available in _setup(), e.g. a dictionary.
      */
-    prepareRefresh() {
+    prepareRefresh(data) {
         throw new Error('This is an abstract method!');
     }
 
@@ -459,18 +532,18 @@ class Window {
      *  Shows the loading indicator in a window.
      */
     showLoading() {
-        this.loading_jquery = $('#loading').clone();
-        this.loading_jquery.removeAttr('id');
-        this.loading_jquery.attr('class', 'loading');
-        this.loading_jquery.prependTo(this.dom.find('.window_content'));
-        this.loading_jquery.show();
+        this.#loading_jquery = $('#loading').clone();
+        this.#loading_jquery.removeAttr('id');
+        this.#loading_jquery.attr('class', 'loading');
+        this.#loading_jquery.prependTo(this.#dom.find('.window_content'));
+        this.#loading_jquery.show();
     }
 
     /**
      *  Hides the loading indicator in a window.
      */
     hideLoading() {
-        this.loading_jquery.hide();
+        this.#loading_jquery.hide();
     }
 
     // Private, not meant to be called by any external code.
@@ -478,26 +551,26 @@ class Window {
         let existing_window = false;
 
         if (data === undefined) {
-            data = this.setup_data;
+            data = this.#setup_data;
             existing_window = true;
         }
 
-        if (this.session === undefined) {
-            this.dom.find('.window_title').html(this.getTitle());
+        if (this.#session === undefined) {
+            this.#dom.find('.window_title').html(this.getTitle());
         } else {
-            this.dom.find('.window_title').html(
-                '[Session: ' + this.session.label + '] ' +
+            this.#dom.find('.window_title').html(
+                '[Session: ' + this.#session.label + '] ' +
                     this.getTitle());
         }
 
         this.showLoading();
 
         if (!existing_window) {
-            this.dom.appendTo('body');
+            this.#dom.appendTo('body');
             this.focus();
         }
 
-        this.setup_data = data;
+        this.#setup_data = data;
         this._setup(data, existing_window);
     }
 
@@ -535,37 +608,48 @@ class Window {
 
         this.prepareClose();
 
-        this.dom.remove();
-        delete Window.instances[this.id];
-        Window.#changeFocus();
+        this.#dom.remove();
+        delete Window.instances[this.#id];
+
+        let keys = Object.keys(Window.instances);
+
+        if (keys.length === 0) {
+            return;
+        }
+
+        keys.sort(function comp(a, b) {
+            return Window.instances[b].getLastFocusTime() - Window.instances[a].getLastFocusTime();
+        });
+
+        Window.instances[keys[0]].focus();
     }
 
     // Private, not meant to be called by any external code.
     onVisibilityClick(event) {
         stopPropagation(event);
 
-        let window_content = this.dom.find('.window_content');
-        let window_header = this.dom.find('.window_header');
+        let window_content = this.#dom.find('.window_content');
+        let window_header = this.#dom.find('.window_header');
 
-        if (!this.collapsed) {
-            let position = this.dom.position();
+        if (!this.#collapsed) {
+            let position = this.#dom.position();
 
-            this.dom.css('transform', '');
-            this.dom.css('left', position.left);
-            this.dom.css('top', position.top);
+            this.#dom.css('transform', '');
+            this.#dom.css('left', position.left);
+            this.#dom.css('top', position.top);
 
-            this.collapsed = true;
-            this.min_height = this.dom.css('min-height');
-            this.last_height = this.dom.outerHeight();
-            this.dom.css('min-height', '0');
-            this.dom.css('resize', 'horizontal');
-            this.dom.height(window_header.outerHeight());
+            this.#collapsed = true;
+            this.#min_height = this.#dom.css('min-height');
+            this.#last_height = this.#dom.outerHeight();
+            this.#dom.css('min-height', '0');
+            this.#dom.css('resize', 'horizontal');
+            this.#dom.height(window_header.outerHeight());
         } else {
-            this.collapsed = false;
-            this.dom.height(this.last_height);
-            this.dom.css('min-height', this.min_height);
-            this.dom.css('resize', 'both');
-            this.dom.css('opacity', '');
+            this.#collapsed = false;
+            this.#dom.height(this.#last_height);
+            this.#dom.css('min-height', this.#min_height);
+            this.#dom.css('resize', 'both');
+            this.#dom.css('opacity', '');
         }
     }
 }
@@ -735,6 +819,8 @@ class Menu {
 
 // Private, not meant to be used by any external code.
 class SettingsWindow extends Window {
+    #current_backend;
+
     getType() {
         return 'settings';
     }
@@ -758,40 +844,38 @@ class SettingsWindow extends Window {
     }
 
     prepareRefresh() {
-        if (this.current_backend !== undefined) {
-            this.current_backend.hide();
-            this.current_backend.appendTo('body');
+        if (this.#current_backend !== undefined) {
+            this.#current_backend.hide();
+            this.#current_backend.appendTo('body');
         }
     }
 
     prepareClose() {
-        if (this.current_backend !== undefined) {
-            this.current_backend.hide();
-            this.current_backend.appendTo('body');
+        if (this.#current_backend !== undefined) {
+            this.#current_backend.hide();
+            this.#current_backend.appendTo('body');
         }
     }
 
     _setup(data, existing_window) {
-        this.current_backend = undefined;
         $('.settings_block').each((i, elem) => {
-            this.dom.find('.settings_backends_combobox').append(
+            this.getContent().find('.settings_backends_combobox').append(
                 new Option($(elem).attr('data-backend'), $(elem).attr('id')));
         });
-        this.dom.find('.settings_backends_combobox').on('change', this, event => {
-            let parent = event.data;
-            parent.dom.find('.settings_backends_combobox option:selected').each((i, elem) => {
+        this.getContent().find('.settings_backends_combobox').on('change', event => {
+            this.getContent().find('.settings_backends_combobox option:selected').each((i, elem) => {
                 let id = $(elem).val();
 
-                if (parent.current_backend === undefined) {
-                    parent.dom.find('.settings_space').html('');
+                if (this.#current_backend === undefined) {
+                    this.getContent().find('.settings_space').html('');
                 } else {
-                    parent.current_backend.hide();
-                    parent.current_backend.appendTo('body');
+                    this.#current_backend.hide();
+                    this.#current_backend.appendTo('body');
                 }
 
-                parent.current_backend = $('#' + id);
-                parent.current_backend.appendTo(parent.dom.find('.settings_space'));
-                parent.current_backend.show();
+                this.#current_backend = $('#' + id);
+                this.#current_backend.appendTo(this.getContent().find('.settings_space'));
+                this.#current_backend.show();
             });
         });
         this.hideLoading();

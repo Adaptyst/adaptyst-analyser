@@ -30,7 +30,7 @@ class TimelineWindow extends Window {
 <div class="toolbar">
     <svg class="general_analyses" xmlns="http://www.w3.org/2000/svg"
          height="24px"
-         viewBox="0 -960 960 960" width="px" fill="#000000"
+         viewBox="0 -960 960 960" width="24px" fill="#000000"
          onclick="" class="disabled">
       <title>General analyses</title>
       <path d="M282.67-278h66.66v-203.33h-66.66V-278Zm328 0h66.66v-413.33h-66.66V-278Zm-164 0h66.66v-118.67h-66.66V-278Zm0-203.33h66.66V-548h-66.66v66.67ZM186.67-120q-27 0-46.84-19.83Q120-159.67 120-186.67v-586.66q0-27 19.83-46.84Q159.67-840 186.67-840h586.66q27 0 46.84 19.83Q840-800.33 840-773.33v586.66q0 27-19.83 46.84Q800.33-120 773.33-120H186.67Zm0-66.67h586.66v-586.66H186.67v586.66Zm0-586.66v586.66-586.66Z"/>
@@ -57,25 +57,25 @@ class TimelineWindow extends Window {
 
     _setup(data, existing_window) {
         if (!existing_window) {
-            this.offcpu_sampling = 0;
-            this.show_no_off_cpu_warning = false;
-            this.item_list = [];
-            this.group_list = [];
-            this.item_dict = {};
-            this.callchain_dict = {};
-            this.metrics_dict = {};
-            this.tooltip_dict = {};
-            this.warning_dict = {};
-            this.general_metrics_dict = {};
-            this.perf_maps_cache = {};
-            this.result_cache = {};
-            this.sampled_diff_dict = {};
-            this.src_dict = {};
-            this.src_index_dict = {};
-            this.overall_end_time = [0];
-            this.src_cache = {};
-            this.roofline_dict = {};
-            this.roofline_info = {};
+            this.getData().offcpu_sampling = 0;
+            this.getData().show_no_off_cpu_warning = false;
+            this.getData().item_list = [];
+            this.getData().group_list = [];
+            this.getData().item_dict = {};
+            this.getData().callchain_dict = {};
+            this.getData().metrics_dict = {};
+            this.getData().tooltip_dict = {};
+            this.getData().warning_dict = {};
+            this.getData().general_metrics_dict = {};
+            this.getData().perf_maps_cache = {};
+            this.getData().result_cache = {};
+            this.getData().sampled_diff_dict = {};
+            this.getData().src_dict = {};
+            this.getData().src_index_dict = {};
+            this.getData().overall_end_time = [0];
+            this.getData().src_cache = {};
+            this.getData().roofline_dict = {};
+            this.getData().roofline_info = {};
         }
 
         let from_json_to_item = (json, level,
@@ -191,7 +191,7 @@ class TimelineWindow extends Window {
                     }
 
                     if (max_off_cpu_sampling !== undefined) {
-                        this.offcpu_sampling = Math.round(Math.pow(
+                        this.getData().offcpu_sampling = Math.round(Math.pow(
                             1 - offcpu_sampling_raw, 3) * max_off_cpu_sampling);
                     }
                 }
@@ -200,11 +200,11 @@ class TimelineWindow extends Window {
                     let start = json.off_cpu[i][0];
                     let end = start + json.off_cpu[i][1];
 
-                    if (this.offcpu_sampling === 0 ||
-                        start % this.offcpu_sampling === 0 ||
-                        end % this.offcpu_sampling === 0 ||
-                        Math.floor(start / this.offcpu_sampling) != Math.floor(
-                            end / this.offcpu_sampling)) {
+                    if (this.getData().offcpu_sampling === 0 ||
+                        start % this.getData().offcpu_sampling === 0 ||
+                        end % this.getData().offcpu_sampling === 0 ||
+                        Math.floor(start / this.getData().offcpu_sampling) != Math.floor(
+                            end / this.getData().offcpu_sampling)) {
                         let off_cpu_item = {
                             id: json.id + '_offcpu' + i,
                             group: json.id,
@@ -219,7 +219,7 @@ class TimelineWindow extends Window {
                     }
                 }
             } else {
-                this.show_no_off_cpu_warning = true;
+                this.getData().show_no_off_cpu_warning = true;
             }
 
             for (let i = 0; i < json.children.length; i++) {
@@ -245,50 +245,50 @@ class TimelineWindow extends Window {
         let part2 = () => {
             if (!existing_window) {
                 from_json_to_item(this._data, 0,
-                                  this.item_list,
-                                  this.group_list,
-                                  this.item_dict,
-                                  this.metrics_dict,
-                                  this.callchain_dict,
-                                  this.tooltip_dict,
-                                  this.warning_dict,
-                                  this.overall_end_time,
-                                  this.general_metrics_dict,
-                                  this.sampled_diff_dict,
-                                  this.src_dict,
-                                  this.src_index_dict,
-                                  this.roofline_info);
+                                  this.getData().item_list,
+                                  this.getData().group_list,
+                                  this.getData().item_dict,
+                                  this.getData().metrics_dict,
+                                  this.getData().callchain_dict,
+                                  this.getData().tooltip_dict,
+                                  this.getData().warning_dict,
+                                  this.getData().overall_end_time,
+                                  this.getData().general_metrics_dict,
+                                  this.getData().sampled_diff_dict,
+                                  this.getData().src_dict,
+                                  this.getData().src_index_dict,
+                                  this.getData().roofline_info);
             }
 
-            if ($.isEmptyObject(this.general_metrics_dict)) {
-                this.dom.find('.general_analyses').off('click');
-                this.dom.find('.general_analyses').attr('class', 'disabled');
+            if ($.isEmptyObject(this.getData().general_metrics_dict)) {
+                this.getContent().find('.general_analyses').off('click');
+                this.getContent().find('.general_analyses').attr('class', 'disabled');
             } else {
-                this.dom.find('.general_analyses').on('click', (event) => {
+                this.getContent().find('.general_analyses').on('click', (event) => {
                     this.onGeneralAnalysesClick(event);
                 });
-                this.dom.find('.general_analyses').attr('class', 'pointer');
+                this.getContent().find('.general_analyses').attr('class', 'pointer');
             }
 
-            let container = this.dom.find('.linuxperf_timeline');
+            let container = this.getContent().find('.linuxperf_timeline');
             container.html('');
 
-            if (this.show_no_off_cpu_warning) {
-                this.dom.find('.no_off_cpu_warning').show();
-            } else if (this.offcpu_sampling > 0) {
-                this.dom.find('.off_cpu_sampling_period').text(this.offcpu_sampling);
-                this.dom.find('.off_cpu_scale_value').text(
-                    this.dom.find('.off_cpu_scale').val());
-                this.dom.find('.off_cpu_sampling_warning').show();
+            if (this.getData().show_no_off_cpu_warning) {
+                this.getContent().find('.no_off_cpu_warning').show();
+            } else if (this.getData().offcpu_sampling > 0) {
+                this.getContent().find('.off_cpu_sampling_period').text(this.getData().offcpu_sampling);
+                this.getContent().find('.off_cpu_scale_value').text(
+                    this.getContent().find('.off_cpu_scale').val());
+                this.getContent().find('.off_cpu_sampling_warning').show();
             }
 
-            this.dom.find('.glossary').show();
+            this.getContent().find('.glossary').show();
             this.hideLoading();
 
             let timeline = new vis.Timeline(
                 container[0],
-                this.item_list,
-                this.group_list,
+                this.getData().item_list,
+                this.getData().group_list,
                 {
                     format: {
                         minorLabels: {
@@ -305,24 +305,24 @@ class TimelineWindow extends Window {
                     },
                     showMajorLabels: false,
                     min: 0,
-                    max: 2 * this.overall_end_time[0]
+                    max: 2 * this.getData().overall_end_time[0]
                 }
             );
 
             timeline.on('contextmenu', (props) => {
                 if (props.group != null) {
-                    let item_list = this.item_list;
-                    let group_list = this.group_list;
-                    let item_dict = this.item_dict;
-                    let callchain_dict = this.callchain_dict;
+                    let item_list = this.getData().item_list;
+                    let group_list = this.getData().group_list;
+                    let item_dict = this.getData().item_dict;
+                    let callchain_dict = this.getData().callchain_dict;
                     let callchain_obj = this.callchain_obj;
-                    let metrics_dict = this.metrics_dict;
-                    let tooltip_dict = this.tooltip_dict;
-                    let warning_dict = this.warning_dict;
-                    let general_metrics_dict = this.general_metrics_dict;
-                    let sampled_diff_dict = this.sampled_diff_dict;
-                    let src_dict = this.src_dict;
-                    let src_index_dict = this.src_index_dict;
+                    let metrics_dict = this.getData().metrics_dict;
+                    let tooltip_dict = this.getData().tooltip_dict;
+                    let warning_dict = this.getData().warning_dict;
+                    let general_metrics_dict = this.getData().general_metrics_dict;
+                    let sampled_diff_dict = this.getData().sampled_diff_dict;
+                    let src_dict = this.getData().src_dict;
+                    let src_index_dict = this.getData().src_index_dict;
 
                     let items = [
                         {
@@ -435,8 +435,8 @@ class TimelineWindow extends Window {
                                                     event.data.line] = 'exact';
                                                 Menu.closeMenu();
                                                 CodeWindow.openCode(this, data, event.data.file,
-                                                                    this.session, this.entity_id,
-                                                                    this.node_id);
+                                                                    this.getSession(), this.getEntityId(),
+                                                                    this.getNodeId());
                                             });
                                     }
                                 } else {
@@ -469,14 +469,14 @@ class TimelineWindow extends Window {
         }
 
         $.ajax({
-            url: this.session.id + '/' + this.entity_id + '/' + this.node_id + '/' + MODULE_NAME,
+            url: this.getSession().id + '/' + this.getEntityId() + '/' + this.getNodeId() + '/' + MODULE_NAME,
             method: 'POST',
             dataType: 'json',
             data: {thread_tree: true}
         }).done(ajax_obj => {
             this._data = ajax_obj;
             $.ajax({
-                url: this.session.id + '/' + this.entity_id + '/' + this.node_id + '/' + MODULE_NAME,
+                url: this.getSession().id + '/' + this.getEntityId() + '/' + this.getNodeId() + '/' + MODULE_NAME,
                 method: 'POST',
                 dataType: 'json',
                 data: {callchain: true}
@@ -497,7 +497,7 @@ class TimelineWindow extends Window {
     onGeneralAnalysesClick(event) {
         Menu.closeMenu();
 
-        let metrics_dict = this.general_metrics_dict;
+        let metrics_dict = this.getData().general_metrics_dict;
 
         let items = [
             {
@@ -529,8 +529,8 @@ class TimelineWindow extends Window {
         let analysis_type = event.data.data;
 
         if (analysis_type === 'roofline') {
-            new RooflineWindow(this.session, this.entity_id,
-                               this.node_id, MODULE_NAME, this,
+            new RooflineWindow(this.getSession(), this.getEntityId(),
+                               this.getNodeId(), MODULE_NAME, this,
                                event.pageX, event.pageY);
         }
     }
@@ -541,8 +541,8 @@ class TimelineWindow extends Window {
         let parent = event.data.data[2];
 
         if (analysis_type === 'flame_graphs') {
-            new FlameGraphWindow(this.session, this.entity_id,
-                                 this.node_id, MODULE_NAME, {
+            new FlameGraphWindow(this.getSession(), this.getEntityId(),
+                                 this.getNodeId(), MODULE_NAME, {
                                      root_window: this,
                                      timeline_group_id: timeline_group_id
                                  }, event.pageX, event.pageY);
@@ -618,20 +618,22 @@ class FlameGraphWindow extends Window {
     }
 
     startResize() {
-        if (this.data.flamegraph_obj !== undefined) {
-            this.being_resized = true;
+        if (this.getData().flamegraph_obj !== undefined) {
+            return true;
         }
+
+        return false;
     }
 
     finishResize() {
-        let flamegraph_obj = this.data.flamegraph_obj;
-        flamegraph_obj.width(this.dom.find('.flamegraph_svg').outerWidth());
+        let flamegraph_obj = this.getData().flamegraph_obj;
+        flamegraph_obj.width(this.getContent().find('.flamegraph_svg').outerWidth());
         flamegraph_obj.update();
     }
 
-    prepareRefresh() {
-        this.setup_data.metric = this.dom.find('.flamegraph_metric').val();
-        this.setup_data.time_ordered = this.dom.find('.flamegraph_time_ordered').prop('checked');
+    prepareRefresh(data) {
+        data.metric = this.getContent().find('.flamegraph_metric').val();
+        data.time_ordered = this.getContent().find('.flamegraph_time_ordered').prop('checked');
     }
 
     getTitle() {
@@ -646,31 +648,31 @@ class FlameGraphWindow extends Window {
 
     _setup(data, existing_window) {
         this.root_window = data.root_window;
-        this.dom.find('.flamegraph_time_ordered').attr(
-            'id', this.id + '_time_ordered');
-        this.dom.find('.flamegraph_time_ordered_label').attr(
-            'for', this.dom.find('.flamegraph_time_ordered').attr('id'));
-        this.dom.find('.flamegraph_search').on('input', () => {
-            this.onSearchQueryChange(this.dom.find('.flamegraph_search').val());
+        this.getContent().find('.flamegraph_time_ordered').attr(
+            'id', this.getId() + '_time_ordered');
+        this.getContent().find('.flamegraph_time_ordered_label').attr(
+            'for', this.getContent().find('.flamegraph_time_ordered').attr('id'));
+        this.getContent().find('.flamegraph_search').on('input', () => {
+            this.onSearchQueryChange(this.getContent().find('.flamegraph_search').val());
         });
-        this.dom.find('.flamegraph_time_ordered').on('change', (event) => {
+        this.getContent().find('.flamegraph_time_ordered').on('change', (event) => {
             this.onTimeOrderedChange(event);
         });
-        this.dom.find('.flamegraph_metric').on('change', (event) => {
+        this.getContent().find('.flamegraph_metric').on('change', (event) => {
             this.onMetricChange(event);
         });
-        this.dom.find('.flamegraph_download').on('click', () => {
+        this.getContent().find('.flamegraph_download').on('click', () => {
             this.downloadFlameGraph();
         });
-        this.dom.find('.flamegraph_replace').on('click', () => {
+        this.getContent().find('.flamegraph_replace').on('click', () => {
             this.onFlameGraphReplaceClick();
         });
-        this.dom.find('.flamegraph_replace').on('contextmenu', (event) => {
+        this.getContent().find('.flamegraph_replace').on('contextmenu', (event) => {
             this.onFlameGraphReplaceRightClick(event);
         });
 
         let to_remove = [];
-        this.dom.find('.flamegraph_metric > option').each(() => {
+        this.getContent().find('.flamegraph_metric > option').each(() => {
             if (!this.disabled) {
                 to_remove.push($(this));
             }
@@ -680,13 +682,13 @@ class FlameGraphWindow extends Window {
             opt.remove();
         }
 
-        this.metrics_dict = this.root_window.metrics_dict[data.timeline_group_id];
+        this.getData().metrics_dict = this.root_window.getData().metrics_dict[data.timeline_group_id];
         let show_carm_checked = $('#show_carm').prop('checked');
         let target_metric_present = false;
-        for (const [k, v] of Object.entries(this.metrics_dict)) {
+        for (const [k, v] of Object.entries(this.getData().metrics_dict)) {
             if (show_carm_checked ||
                 !v.title.startsWith('CARM_')) {
-                this.dom.find('.flamegraph_metric').append(
+                this.getContent().find('.flamegraph_metric').append(
                     new Option(v.title, k));
 
                 if (k === data.metric) {
@@ -696,24 +698,24 @@ class FlameGraphWindow extends Window {
         }
 
         let metric = target_metric_present ? data.metric : 'walltime';
-        this.dom.find('.flamegraph_metric').val(metric);
-        this.dom.find('.flamegraph_time_ordered').prop(
+        this.getContent().find('.flamegraph_metric').val(metric);
+        this.getContent().find('.flamegraph_time_ordered').prop(
             'checked', data.time_ordered === undefined ? false : data.time_ordered);
-        this.dom.find('.flamegraph').attr('data-id', data.timeline_group_id);
+        this.getContent().find('.flamegraph').attr('data-id', data.timeline_group_id);
 
-        this.data.replacements = {};
+        this.getData().replacements = {};
 
         if (data.timeline_group_id + '_' +
-            parseFloat($('#threshold_input').val()) in this.root_window.result_cache) {
-            this.data.result_obj = this.root_window.result_cache[
+            parseFloat($('#threshold_input').val()) in this.root_window.getData().result_cache) {
+            this.getData().result_obj = this.root_window.getData().result_cache[
                 data.timeline_group_id + '_' + parseFloat($(
                     '#threshold_input').val())];
 
-            if (!(metric in this.data.result_obj)) {
-                this.data.flamegraph_obj = undefined;
-                this.dom.find('.flamegraph_svg').hide();
-                this.dom.find('.flamegraph_search').val('');
-                this.dom.find('.no_flamegraph').show();
+            if (!(metric in this.getData().result_obj)) {
+                this.getData().flamegraph_obj = undefined;
+                this.getContent().find('.flamegraph_svg').hide();
+                this.getContent().find('.flamegraph_search').val('');
+                this.getContent().find('.no_flamegraph').show();
             } else {
                 this.openFlameGraph(metric);
             }
@@ -723,49 +725,49 @@ class FlameGraphWindow extends Window {
             let pid_tid = data.timeline_group_id.split('_');
 
             $.ajax({
-                url: this.session.id + '/' + this.entity_id + '/' + this.node_id + '/' + MODULE_NAME,
+                url: this.getSession().id + '/' + this.getEntityId() + '/' + this.getNodeId() + '/' + MODULE_NAME,
                 method: 'POST',
                 dataType: 'json',
                 data: {pid: pid_tid[0], tid: pid_tid[1],
                        threshold: 1.0 * parseFloat($(
                            '#threshold_input').val()) / 100}
             }).done(ajax_obj => {
-                this.root_window.result_cache[
+                this.root_window.getData().result_cache[
                     data.timeline_group_id + '_' + parseFloat($(
                         '#threshold_input').val())] = ajax_obj;
-                this.data.result_obj = ajax_obj;
+                this.getData().result_obj = ajax_obj;
 
-                if (!(metric in this.data.result_obj)) {
-                    this.data.flamegraph_obj = undefined;
-                    this.dom.find('.flamegraph_svg').hide();
-                    this.dom.find('.flamegraph_search').val('');
-                    this.dom.find('.no_flamegraph').show();
+                if (!(metric in this.getData().result_obj)) {
+                    this.getData().flamegraph_obj = undefined;
+                    this.getContent().find('.flamegraph_svg').hide();
+                    this.getContent().find('.flamegraph_search').val('');
+                    this.getContent().find('.no_flamegraph').show();
                 } else {
                     this.openFlameGraph(metric);
                 }
 
                 this.hideLoading();
             }).fail(ajax_obj => {
-                this.data.flamegraph_obj = undefined;
-                this.dom.find('.flamegraph_svg').hide();
-                this.dom.find('.flamegraph_search').val('');
-                this.dom.find('.no_flamegraph').show();
+                this.getData().flamegraph_obj = undefined;
+                this.getContent().find('.flamegraph_svg').hide();
+                this.getContent().find('.flamegraph_search').val('');
+                this.getContent().find('.no_flamegraph').show();
                 this.hideLoading();
             });
         }
     }
 
     updateFlameGraph(data, always_change_height) {
-        let flamegraph_obj = this.data.flamegraph_obj;
+        let flamegraph_obj = this.getData().flamegraph_obj;
         if (flamegraph_obj !== undefined) {
             let update_height = () => {
-                let flamegraph_svg = this.dom.find('.flamegraph_svg').children()[0];
+                let flamegraph_svg = this.getContent().find('.flamegraph_svg').children()[0];
 
                 if (flamegraph_svg !== undefined) {
                     let target_height = flamegraph_svg.getBBox().height;
 
-                    if (always_change_height || target_height > this.dom.find('.flamegraph_svg').outerHeight()) {
-                        this.dom.find('.flamegraph_svg').height(target_height);
+                    if (always_change_height || target_height > this.getContent().find('.flamegraph_svg').outerHeight()) {
+                        this.getContent().find('.flamegraph_svg').height(target_height);
                         flamegraph_svg.setAttribute('height', target_height);
                     }
                 }
@@ -808,10 +810,10 @@ class FlameGraphWindow extends Window {
                                                         colour[1],
                                                         colour[2],
                                                         0, 0, 0,
-                                                        this.metrics_dict[metric].unit];
+                                                        this.getData().metrics_dict[metric].unit];
                 } else {
                     sums[decoded.file][decoded.line] = [metric, 0, 255, 0, 0, 0,
-                                                        this.metrics_dict[metric].unit];
+                                                        this.getData().metrics_dict[metric].unit];
                 }
             }
 
@@ -824,13 +826,13 @@ class FlameGraphWindow extends Window {
         }
 
         CodeWindow.openCode(this.root_window,
-                            sums, Object.keys(sums)[0], this.session, this.entity_id,
-                            this.node_id);
+                            sums, Object.keys(sums)[0], this.getSession(), this.getEntityId(),
+                            this.getNodeId());
     }
 
     onAddToRooflineClick(event) {
-        let info = this.root_window.roofline_info;
-        let result_obj = this.data.result_obj;
+        let info = this.root_window.getData().roofline_info;
+        let result_obj = this.getData().result_obj;
         let exists = false;
         let name = "";
 
@@ -842,12 +844,12 @@ class FlameGraphWindow extends Window {
                 return;
             }
 
-            exists = name in this.root_window.roofline_dict;
+            exists = name in this.root_window.getData().roofline_dict;
         } while (exists);
 
         let trace = [];
         let node = event.data.data.node;
-        let cur_callchain_obj = this.root_window.callchain_obj[this.dom.find('.flamegraph_metric').val()];
+        let cur_callchain_obj = this.root_window.callchain_obj[this.getContent().find('.flamegraph_metric').val()];
 
         while (node != undefined) {
             if (node.data.name in cur_callchain_obj) {
@@ -998,13 +1000,13 @@ class FlameGraphWindow extends Window {
                                        8 * double_ratio));
         }
 
-        this.root_window.roofline_dict[name] = [arith_intensity, flops];
+        this.root_window.getData().roofline_dict[name] = [arith_intensity, flops];
 
         for (const v of Object.values(Window.instances)) {
             if (v.getType() === 'linuxperf_roofline' &&
-                v.session.id === this.session.id &&
-                v.entity_id === this.entity_id &&
-                v.node_id === this.node_id) {
+                v.session.id === this.getSession().id &&
+                v.entity_id === this.getEntityId() &&
+                v.node_id === this.getNodeId()) {
                 v.dom.find('.roofline_point_select').append(
                     new Option(name, name));
                 v.updateRoofline();
@@ -1013,11 +1015,11 @@ class FlameGraphWindow extends Window {
     }
 
     openFlameGraph(metric) {
-        let result_obj = this.data.result_obj;
-        this.data.flamegraph_obj = flamegraph();
-        let flamegraph_obj = this.data.flamegraph_obj;
+        let result_obj = this.getData().result_obj;
+        this.getData().flamegraph_obj = flamegraph();
+        let flamegraph_obj = this.getData().flamegraph_obj;
         flamegraph_obj.inverted(true);
-        flamegraph_obj.sort(this.dom.find('.flamegraph_time_ordered').prop('checked') ? false : true);
+        flamegraph_obj.sort(this.getContent().find('.flamegraph_time_ordered').prop('checked') ? false : true);
         flamegraph_obj.color((node, original_color) => {
             if (node.highlight) {
                 return original_color;
@@ -1036,15 +1038,15 @@ class FlameGraphWindow extends Window {
         });
         flamegraph_obj.getName(node => {
             let result = undefined;
-            if (node.data.name in this.root_window.callchain_obj[this.dom.find('.flamegraph_metric').val()]) {
-                let symbol = this.root_window.callchain_obj[this.dom.find('.flamegraph_metric').val()][node.data.name];
+            if (node.data.name in this.root_window.callchain_obj[this.getContent().find('.flamegraph_metric').val()]) {
+                let symbol = this.root_window.callchain_obj[this.getContent().find('.flamegraph_metric').val()][node.data.name];
                 result = new String(symbol[0]);
             } else {
                 result = new String(node.data.name);
             }
 
             for (const [k, v] of Object.entries(
-                this.data.replacements)) {
+                this.getData().replacements)) {
                 result = result.replace(new RegExp(k), v);
             }
 
@@ -1067,7 +1069,7 @@ class FlameGraphWindow extends Window {
                 }
 
                 parent.children = new_children;
-                this.updateFlameGraph(d3.select('#' + this.dom.find('.flamegraph_svg').attr('id')).datum().data, false);
+                this.updateFlameGraph(d3.select('#' + this.getContent().find('.flamegraph_svg').attr('id')).datum().data, false);
             }
         });
         flamegraph_obj.onContextMenu((event, node) => {
@@ -1075,8 +1077,8 @@ class FlameGraphWindow extends Window {
 
             let options = [];
 
-            if (!this.dom.find('.flamegraph_time_ordered').prop('checked') &&
-                'roofline' in this.root_window.general_metrics_dict) {
+            if (!this.getContent().find('.flamegraph_time_ordered').prop('checked') &&
+                'roofline' in this.root_window.getData().general_metrics_dict) {
                 options.push(['Add to the roofline plot', [{
                     'node': node,
                     'window': this
@@ -1085,10 +1087,10 @@ class FlameGraphWindow extends Window {
                 }]]);
             }
 
-            let symbol = this.root_window.callchain_obj[this.dom.find('.flamegraph_metric').val()][node.data.name];
+            let symbol = this.root_window.callchain_obj[this.getContent().find('.flamegraph_metric').val()][node.data.name];
 
-            if (symbol !== undefined && this.root_window.src_dict[symbol[1]] !== undefined) {
-                let offset_dict = this.root_window.src_dict[symbol[1]];
+            if (symbol !== undefined && this.root_window.getData().src_dict[symbol[1]] !== undefined) {
+                let offset_dict = this.root_window.getData().src_dict[symbol[1]];
                 let code_available = false;
 
                 for (const addr of Object.keys(node.data.offsets)) {
@@ -1104,7 +1106,7 @@ class FlameGraphWindow extends Window {
                     options.push(['View the code details', [{
                         'offset_dict': offset_dict,
                         'node': node,
-                        'session': this.session,
+                        'session': this.getSession(),
                         'metric': metric
                     }, (event) => {
                         this.onOpenCodeClick(event);
@@ -1120,83 +1122,83 @@ class FlameGraphWindow extends Window {
         });
         flamegraph_obj.setLabelHandler((node) => {
             let numf = new Intl.NumberFormat('en-US');
-            let name = this.data.flamegraph_obj.getName()(node).valueOf();
+            let name = this.getData().flamegraph_obj.getName()(node).valueOf();
 
             if (metric === 'walltime' && name !== '(compressed)') {
                 if (node.data.hot_value === node.data.value) {
                     return name + ': ' + (100 * (node.x1 - node.x0)).toFixed(2) + '% of the entire execution time, ' + numf.format(node.data.value) + ' ' +
-                        this.metrics_dict[metric].unit + '\n\nOn-CPU: 100.00% of the block, ' +
+                        this.getData().metrics_dict[metric].unit + '\n\nOn-CPU: 100.00% of the block, ' +
                         numf.format(node.data.value) +
-                        ' ' + this.metrics_dict[metric].unit;
+                        ' ' + this.getData().metrics_dict[metric].unit;
                 } else if (node.data.cold_value === node.data.value) {
                     return name + ': ' + (100 * (node.x1 - node.x0)).toFixed(2) + '% of the entire execution time, ' + numf.format(node.data.value) + ' ' +
-                        this.metrics_dict[metric].unit + '\n\nOff-CPU: 100.00% of the block, ' +
+                        this.getData().metrics_dict[metric].unit + '\n\nOff-CPU: 100.00% of the block, ' +
                         numf.format(node.data.value) +
-                        ' ' + this.metrics_dict[metric].unit;
+                        ' ' + this.getData().metrics_dict[metric].unit;
                 } else {
                     return name + ': ' + (100 * (node.x1 - node.x0)).toFixed(2) + '% of the entire execution time, ' + numf.format(node.data.value) + ' ' +
-                        this.metrics_dict[metric].unit + '\n\nOn-CPU: ' +
+                        this.getData().metrics_dict[metric].unit + '\n\nOn-CPU: ' +
                         (100 * ((1.0 * node.data.hot_value) /
                                 (1.0 * node.data.value))).toFixed(2) + '% of the block, ' +
                         numf.format(node.data.hot_value) +
-                        ' ' + this.metrics_dict[metric].unit + '\nOff-CPU: ' +
+                        ' ' + this.getData().metrics_dict[metric].unit + '\nOff-CPU: ' +
                         (100 * ((1.0 * node.data.cold_value) /
                                 (1.0 * node.data.value))).toFixed(2) + '% of the block, ' +
                         numf.format(node.data.cold_value) + ' ' +
-                        this.metrics_dict[metric].unit;
+                        this.getData().metrics_dict[metric].unit;
                 }
             } else {
                 if (name === '(compressed)') {
                     return 'This block is compressed, click it to expand it.\n\n' +
                     (100 * (node.x1 - node.x0)).toFixed(2) + '% overall, ' +
                     numf.format(node.data.value) +
-                        ' ' + this.metrics_dict[metric].unit;
+                        ' ' + this.getData().metrics_dict[metric].unit;
                 } else {
                     return name + ': ' +
                     (100 * (node.x1 - node.x0)).toFixed(2) + '% overall, ' +
                     numf.format(node.data.value) +
-                        ' ' + this.metrics_dict[metric].unit;
+                        ' ' + this.getData().metrics_dict[metric].unit;
                 }
             }
         });
         flamegraph_obj.setSearchHandler((results, sum, total) => {
-            this.dom.find('.flamegraph_search_blocks').html(results.length.toLocaleString());
-            this.dom.find('.flamegraph_search_found').html(sum.toLocaleString());
-            this.dom.find('.flamegraph_search_total').html(this.data.total.toLocaleString());
-            this.dom.find('.flamegraph_search_percentage').html(
-                (1.0 * sum / this.data.total * 100).toFixed(2));
+            this.getContent().find('.flamegraph_search_blocks').html(results.length.toLocaleString());
+            this.getContent().find('.flamegraph_search_found').html(sum.toLocaleString());
+            this.getContent().find('.flamegraph_search_total').html(this.getData().total.toLocaleString());
+            this.getContent().find('.flamegraph_search_percentage').html(
+                (1.0 * sum / this.getData().total * 100).toFixed(2));
         });
 
         if (metric !== 'walltime') {
             flamegraph_obj.setColorHue('green');
         }
 
-        this.dom.find('.no_flamegraph').hide();
-        this.dom.find('.flamegraph_svg').html('');
-        this.dom.find('.flamegraph_search').val('');
-        this.dom.find('.flamegraph_search_results').hide();
-        this.dom.find('.flamegraph_svg').attr(
-            'id', this.id + '_flamegraph_svg');
-        this.dom.find('.flamegraph_svg').show();
-        flamegraph_obj.width(this.dom.find('.flamegraph').outerWidth());
-        d3.select('#' + this.dom.find('.flamegraph_svg').attr('id')).datum(structuredClone(
+        this.getContent().find('.no_flamegraph').hide();
+        this.getContent().find('.flamegraph_svg').html('');
+        this.getContent().find('.flamegraph_search').val('');
+        this.getContent().find('.flamegraph_search_results').hide();
+        this.getContent().find('.flamegraph_svg').attr(
+            'id', this.getId() + '_flamegraph_svg');
+        this.getContent().find('.flamegraph_svg').show();
+        flamegraph_obj.width(this.getContent().find('.flamegraph').outerWidth());
+        d3.select('#' + this.getContent().find('.flamegraph_svg').attr('id')).datum(structuredClone(
             result_obj[metric][
-                this.dom.find('.flamegraph_time_ordered').prop('checked') ? 1 : 0])).call(
+                this.getContent().find('.flamegraph_time_ordered').prop('checked') ? 1 : 0])).call(
                     flamegraph_obj);
-        this.data.total =
-            d3.select('#' + this.dom.find('.flamegraph_svg').attr('id')).datum().data['value'];
+        this.getData().total =
+            d3.select('#' + this.getContent().find('.flamegraph_svg').attr('id')).datum().data['value'];
         this.updateFlameGraph(null, true);
-        flamegraph_obj.width(this.dom.find('.flamegraph_svg').outerWidth());
+        flamegraph_obj.width(this.getContent().find('.flamegraph_svg').outerWidth());
         flamegraph_obj.update();
 
-        this.dom.find('.flamegraph')[0].scrollTop = 0;
+        this.getContent().find('.flamegraph')[0].scrollTop = 0;
     }
 
     onFlameGraphReplaceClick() {
         let query = window.prompt(
             'Please enter a regular expression to be replaced in ' +
                 'the flame graph.',
-            this.dom.find('.flamegraph_search').val());
+            this.getContent().find('.flamegraph_search').val());
 
         if (query == undefined || query === "") {
             return;
@@ -1212,8 +1214,8 @@ class FlameGraphWindow extends Window {
             return;
         }
 
-        this.data.replacements[query] = replacement;
-        this.data.flamegraph_obj.update();
+        this.getData().replacements[query] = replacement;
+        this.getData().flamegraph_obj.update();
     }
 
     onFlameGraphReplaceRightClick(event) {
@@ -1222,7 +1224,7 @@ class FlameGraphWindow extends Window {
         let options = [];
 
         for (const [k, v] of Object.entries(
-            this.data.replacements)) {
+            this.getData().replacements)) {
             options.push([k + ' ==> ' + v, [{'query': k, 'replacement': v},
                                             (info) => {
                                                 this.onReplacementClick(info);
@@ -1239,7 +1241,7 @@ class FlameGraphWindow extends Window {
     onReplacementClick(info) {
         let data = info.data.data;
 
-        let replacements = this.data.replacements;
+        let replacements = this.getData().replacements;
 
         let query = window.prompt(
             'Please enter a regular expression to be replaced in ' +
@@ -1253,7 +1255,7 @@ class FlameGraphWindow extends Window {
         if (query === "") {
             delete replacements[data.query];
             window.alert('The replacement has been removed!');
-            this.data.flamegraph_obj.update();
+            this.getData().flamegraph_obj.update();
             return;
         }
 
@@ -1268,48 +1270,48 @@ class FlameGraphWindow extends Window {
             return;
         }
 
-        this.data.replacements[query] = replacement;
-        this.data.flamegraph_obj.update();
+        this.getData().replacements[query] = replacement;
+        this.getData().flamegraph_obj.update();
     }
 
     onMetricChange(event) {
-        let result_obj = this.data.result_obj;
+        let result_obj = this.getData().result_obj;
         let metric = event.currentTarget.value;
 
-        this.data.flamegraph_obj = undefined;
-        this.dom.find('.flamegraph_time_ordered').prop('checked', false);
+        this.getData().flamegraph_obj = undefined;
+        this.getContent().find('.flamegraph_time_ordered').prop('checked', false);
 
         if (metric in result_obj) {
             this.openFlameGraph(metric);
         } else {
-            this.dom.find('.flamegraph_search').val('');
-            this.dom.find('.flamegraph_search_results').hide();
-            this.dom.find('.flamegraph_svg').hide();
-            this.dom.find('.no_flamegraph').show();
+            this.getContent().find('.flamegraph_search').val('');
+            this.getContent().find('.flamegraph_search_results').hide();
+            this.getContent().find('.flamegraph_svg').hide();
+            this.getContent().find('.no_flamegraph').show();
         }
     }
 
     onTimeOrderedChange(event) {
-        let flamegraph_obj = this.data.flamegraph_obj;
-        let result_obj = this.data.result_obj;
+        let flamegraph_obj = this.getData().flamegraph_obj;
+        let result_obj = this.getData().result_obj;
         if (flamegraph_obj !== undefined) {
             flamegraph_obj.sort(!event.currentTarget.checked);
             this.updateFlameGraph(structuredClone(
-                result_obj[this.dom.find('.flamegraph_metric').val()][
+                result_obj[this.getContent().find('.flamegraph_metric').val()][
                     event.currentTarget.checked ? 1 : 0]), true);
 
-            this.dom.find('.flamegraph_search').val('');
-            this.dom.find('.flamegraph_search_results').hide();
+            this.getContent().find('.flamegraph_search').val('');
+            this.getContent().find('.flamegraph_search_results').hide();
         }
     }
 
     onSearchQueryChange(value) {
-        let flamegraph_obj = this.data.flamegraph_obj;
+        let flamegraph_obj = this.getData().flamegraph_obj;
         if (flamegraph_obj !== undefined) {
             if (value === undefined || value === "") {
-                this.dom.find('.flamegraph_search_results').hide();
+                this.getContent().find('.flamegraph_search_results').hide();
             } else {
-                this.dom.find('.flamegraph_search_results').show();
+                this.getContent().find('.flamegraph_search_results').show();
             }
 
             flamegraph_obj.search(value);
@@ -1319,7 +1321,7 @@ class FlameGraphWindow extends Window {
     // downloadFlameGraph() is based on https://stackoverflow.com/a/28226736
     // (originally CC BY-SA 4.0, covered by GNU GPL v3 here)
     downloadFlameGraph() {
-        let flamegraph_obj = this.data.flamegraph_obj;
+        let flamegraph_obj = this.getData().flamegraph_obj;
 
         if (flamegraph_obj === undefined) {
             return;
@@ -1333,7 +1335,7 @@ class FlameGraphWindow extends Window {
             return;
         }
 
-        let svg = this.dom.find('.flamegraph_svg').children()[0].cloneNode(true);
+        let svg = this.getContent().find('.flamegraph_svg').children()[0].cloneNode(true);
         let style = document.createElement('style');
 
         style.innerHTML = $('#viewer_script').attr('data-d3-flamegraph-css');
@@ -1447,18 +1449,18 @@ class RooflineWindow extends Window {
     }
 
     startResize() {
-        this.being_resized = true;
-        this.dom.find('.roofline').html('');
+        this.getContent().find('.roofline').html('');
+        return true;
     }
 
     finishResize() {
-        if (this.data.plot_config !== undefined &&
-            this.dom.find('.roofline_type_select').val() != null) {
-            this.dom.find('.roofline').html('');
+        if (this.getData().roofline.plot_config !== undefined &&
+            this.getContent().find('.roofline_type_select').val() != null) {
+            this.getContent().find('.roofline').html('');
 
-            let plot_config = this.data.plot_config;
-            plot_config.width = this.dom.find('.roofline').outerWidth() - 10;
-            plot_config.height = this.dom.find('.roofline').outerHeight() - 10;
+            let plot_config = this.getData().roofline.plot_config;
+            plot_config.width = this.getContent().find('.roofline').outerWidth() - 10;
+            plot_config.height = this.getContent().find('.roofline').outerHeight() - 10;
             functionPlot(plot_config);
         }
     }
@@ -1478,60 +1480,60 @@ class RooflineWindow extends Window {
     _setup(data, existing_window) {
         this.root_window = data;
 
-        this.dom.find('.roofline_type_select').on(
+        this.getContent().find('.roofline_type_select').on(
             'change',
             (event) => {
                 this.onRooflineTypeChange(event);
             });
-        this.dom.find('.roofline_l1').on(
+        this.getContent().find('.roofline_l1').on(
             'click',
             () => {
                 this.onRooflineBoundsChange('l1');
             });
-        this.dom.find('.roofline_l2').on(
+        this.getContent().find('.roofline_l2').on(
             'click',
             () => {
                 this.onRooflineBoundsChange('l2');
             });
-        this.dom.find('.roofline_l3').on(
+        this.getContent().find('.roofline_l3').on(
             'click',
             () => {
                 this.onRooflineBoundsChange('l3');
             });
-        this.dom.find('.roofline_dram').on(
+        this.getContent().find('.roofline_dram').on(
             'click',
             () => {
                 this.onRooflineBoundsChange('dram');
             });
-        this.dom.find('.roofline_fp').on(
+        this.getContent().find('.roofline_fp').on(
             'click',
             () => {
                 this.onRooflineBoundsChange('fp');
             });
-        this.dom.find('.roofline_point_delete').on(
+        this.getContent().find('.roofline_point_delete').on(
             'click',
             (event) => {
                 this.onRooflinePointDeleteClick(event);
             });
-        this.dom.find('.roofline_point_select').on(
+        this.getContent().find('.roofline_point_select').on(
             'change',
             (event) => {
                 this.onRooflinePointChange(event);
             });
 
-        if ('roofline' in this.root_window.result_cache) {
-            this.data = this.root_window.result_cache['roofline'];
+        if ('roofline' in this.root_window.getData().result_cache) {
+            this.getData().roofline = this.root_window.getData().result_cache['roofline'];
             this.openRooflinePlot();
             this.hideLoading();
         } else {
             $.ajax({
-                url: this.session.id + '/' + this.entity_id + '/' + this.node_id + '/' + MODULE_NAME,
+                url: this.getSession().id + '/' + this.getEntityId() + '/' + this.getNodeId() + '/' + MODULE_NAME,
                 method: 'POST',
                 dataType: 'json',
                 data: {general_analysis: 'roofline'}
             }).done(ajax_obj => {
-                this.root_window.result_cache['roofline'] = ajax_obj;
-                this.data = ajax_obj;
+                this.root_window.getData().result_cache['roofline'] = ajax_obj;
+                this.getData().roofline = ajax_obj;
                 this.openRooflinePlot();
                 this.hideLoading();
             }).fail(ajax_obj => {
@@ -1543,21 +1545,21 @@ class RooflineWindow extends Window {
     }
 
     openRooflinePlot() {
-        for (let i = 0; i < this.data.models.length; i++) {
-            this.dom.find('.roofline_type_select').append(
-                new Option(this.data.models[i].isa, i));
+        for (let i = 0; i < this.getData().roofline.models.length; i++) {
+            this.getContent().find('.roofline_type_select').append(
+                new Option(this.getData().roofline.models[i].isa, i));
         }
 
-        for (const k of Object.keys(this.root_window.roofline_dict)) {
-            this.dom.find('.roofline_point_select').append(
+        for (const k of Object.keys(this.root_window.getData().roofline_dict)) {
+            this.getContent().find('.roofline_point_select').append(
                 new Option(k, k));
         }
 
-        let plot_container = this.dom.find('.roofline');
-        let plot_id = this.id + '_roofline';
+        let plot_container = this.getContent().find('.roofline');
+        let plot_id = this.getId() + '_roofline';
         plot_container.attr('id', plot_id);
 
-        this.data.bounds = {
+        this.getData().roofline.bounds = {
             'l1': true,
             'l2': true,
             'l3': true,
@@ -1567,7 +1569,7 @@ class RooflineWindow extends Window {
     }
 
     onRooflinePointDeleteClick(event) {
-        let cur_val = this.dom.find('.roofline_point_select').val();
+        let cur_val = this.getContent().find('.roofline_point_select').val();
 
         if (cur_val !== '' && cur_val != undefined) {
             let confirmed = window.confirm('Are you sure you want to ' +
@@ -1578,13 +1580,13 @@ class RooflineWindow extends Window {
                 return;
             }
 
-            this.dom.find('.roofline_point_select').val('');
-            this.dom.find('.roofline_point_ai').html('<i>Select first.</i>');
-            this.dom.find('.roofline_point_perf').html('<i>Select first.</i>');
-            this.dom.find(
+            this.getContent().find('.roofline_point_select').val('');
+            this.getContent().find('.roofline_point_ai').html('<i>Select first.</i>');
+            this.getContent().find('.roofline_point_perf').html('<i>Select first.</i>');
+            this.getContent().find(
                 '.roofline_point_select option[value="' + cur_val + '"]').remove()
 
-            delete this.root_window.roofline_dict[cur_val];
+            delete this.root_window.getData().roofline_dict[cur_val];
 
             this.updateRoofline();
         }
@@ -1594,76 +1596,76 @@ class RooflineWindow extends Window {
         let new_val = event.target.value;
 
         if (new_val === '' || new_val == undefined) {
-            this.dom.find('.roofline_point_ai').html('<i>Select first.</i>');
-            this.dom.find('.roofline_point_perf').html('<i>Select first.</i>');
+            this.getContent().find('.roofline_point_ai').html('<i>Select first.</i>');
+            this.getContent().find('.roofline_point_perf').html('<i>Select first.</i>');
         } else {
-            let point = this.root_window.roofline_dict[new_val];
+            let point = this.root_window.getData().roofline_dict[new_val];
 
-            this.dom.find('.roofline_point_ai').text(point[0]);
-            this.dom.find('.roofline_point_perf').text(point[1] / 1000000000);
+            this.getContent().find('.roofline_point_ai').text(point[0]);
+            this.getContent().find('.roofline_point_perf').text(point[1] / 1000000000);
         }
     }
 
     updateRoofline() {
-        let plot_present = this.dom.find('.roofline_type_select').val() != null;
+        let plot_present = this.getContent().find('.roofline_type_select').val() != null;
         let model = plot_present ?
-            this.data.models[
-                this.dom.find('.roofline_type_select').val()] : undefined;
+            this.getData().roofline.models[
+                this.getContent().find('.roofline_type_select').val()] : undefined;
         let plot_data = [];
         let for_turning_x = [];
 
-        if (this.data.bounds.l1) {
+        if (this.getData().roofline.bounds.l1) {
             if (plot_present) {
-                plot_data.push(this.data.l1_func);
+                plot_data.push(this.getData().roofline.l1_func);
                 for_turning_x.push(model.l1.gbps);
             }
 
-            this.dom.find('.roofline_l1').html('<b>L1:</b> on');
+            this.getContent().find('.roofline_l1').html('<b>L1:</b> on');
         } else {
-            this.dom.find('.roofline_l1').html('<b>L1:</b> off');
+            this.getContent().find('.roofline_l1').html('<b>L1:</b> off');
         }
 
-        if (this.data.bounds.l2) {
+        if (this.getData().roofline.bounds.l2) {
             if (plot_present) {
-                plot_data.push(this.data.l2_func);
+                plot_data.push(this.getData().roofline.l2_func);
                 for_turning_x.push(model.l2.gbps);
             }
 
-            this.dom.find('.roofline_l2').html('<b>L2:</b> on');
+            this.getContent().find('.roofline_l2').html('<b>L2:</b> on');
         } else {
-            this.dom.find('.roofline_l2').html('<b>L2:</b> off');
+            this.getContent().find('.roofline_l2').html('<b>L2:</b> off');
         }
 
-        if (this.data.bounds.l3) {
+        if (this.getData().roofline.bounds.l3) {
             if (plot_present) {
-                plot_data.push(this.data.l3_func);
+                plot_data.push(this.getData().roofline.l3_func);
                 for_turning_x.push(model.l3.gbps);
             }
 
-            this.dom.find('.roofline_l3').html('<b>L3:</b> on');
+            this.getContent().find('.roofline_l3').html('<b>L3:</b> on');
         } else {
-            this.dom.find('.roofline_l3').html('<b>L3:</b> off');
+            this.getContent().find('.roofline_l3').html('<b>L3:</b> off');
         }
 
-        if (this.data.bounds.dram) {
+        if (this.getData().roofline.bounds.dram) {
             if (plot_present) {
-                plot_data.push(this.data.dram_func);
+                plot_data.push(this.getData().roofline.dram_func);
                 for_turning_x.push(model.dram.gbps);
             }
 
-            this.dom.find('.roofline_dram').html('<b>DRAM:</b> on');
+            this.getContent().find('.roofline_dram').html('<b>DRAM:</b> on');
         } else {
-            this.dom.find('.roofline_dram').html('<b>DRAM:</b> off');
+            this.getContent().find('.roofline_dram').html('<b>DRAM:</b> off');
         }
 
-        if (this.data.bounds.fp) {
+        if (this.getData().roofline.bounds.fp) {
             if (plot_present) {
-                plot_data.push(this.data.fp_func);
+                plot_data.push(this.getData().roofline.fp_func);
             }
 
-            this.dom.find('.roofline_fp').html('<b>FP:</b> on');
+            this.getContent().find('.roofline_fp').html('<b>FP:</b> on');
         } else {
-            this.dom.find('.roofline_fp').html('<b>FP:</b> off');
+            this.getContent().find('.roofline_fp').html('<b>FP:</b> off');
         }
 
         if (plot_present) {
@@ -1672,7 +1674,7 @@ class RooflineWindow extends Window {
             let max_point_x = 0;
             let max_point_y = 0;
 
-            for (const [name, [x, y]] of Object.entries(this.root_window.roofline_dict)) {
+            for (const [name, [x, y]] of Object.entries(this.root_window.getData().roofline_dict)) {
                 let scaled_y = y / 1000000000;
 
                 plot_data.push({
@@ -1698,58 +1700,58 @@ class RooflineWindow extends Window {
                 }
             }
 
-            this.data.plot_config.data = plot_data;
-            this.data.plot_config.xAxis.domain =
+            this.getData().roofline.plot_config.data = plot_data;
+            this.getData().roofline.plot_config.xAxis.domain =
                 [0.00390625, turning_x > max_point_x ? 1.5 * turning_x : 1.1 * max_point_x];
-            this.data.plot_config.yAxis.domain =
+            this.getData().roofline.plot_config.yAxis.domain =
                 [0.00390625, model.fp_fma.gflops > max_point_y ?
                  1.25 * model.fp_fma.gflops : 1.1 * max_point_y];
-            functionPlot(this.data.plot_config);
+            functionPlot(this.getData().roofline.plot_config);
         }
     }
 
     onRooflineBoundsChange(bound) {
-        this.data.bounds[bound] = !this.data.bounds[bound];
+        this.getData().roofline.bounds[bound] = !this.getData().roofline.bounds[bound];
         this.updateRoofline();
     }
 
     onRooflineTypeChange(event) {
         let type_index = event.currentTarget.value;
-        let model = this.data.models[type_index];
+        let model = this.getData().roofline.models[type_index];
 
-        this.dom.find('.roofline_details_text').html(`
+        this.getContent().find('.roofline_details_text').html(`
         <b>Precision:</b> ${model.precision}<br />
         <b>Threads:</b> ${model.threads}<br />
         <b>Loads:</b> ${model.loads}<br />
         <b>Stores:</b> ${model.stores}<br />
         <b>Interleaved:</b> ${model.interleaved}<br />
-        <b>L1 bytes:</b> ${this.data.l1}<br />
-        <b>L2 bytes:</b> ${this.data.l2}<br />
-        <b>L3 bytes:</b> ${this.data.l3}<br />
+        <b>L1 bytes:</b> ${this.getData().roofline.l1}<br />
+        <b>L2 bytes:</b> ${this.getData().roofline.l2}<br />
+        <b>L3 bytes:</b> ${this.getData().roofline.l3}<br />
         <b>DRAM bytes:</b> ${model.dram_bytes}
     `);
 
-        this.data.l1_func = {
+        this.getData().roofline.l1_func = {
             fn: `min(x * ${model.l1.gbps}, ${model.fp_fma.gflops})`,
             color: 'darkred'
         };
 
-        this.data.l2_func = {
+        this.getData().roofline.l2_func = {
             fn: `min(x * ${model.l2.gbps}, ${model.fp_fma.gflops})`,
             color: 'darkgreen'
         };
 
-        this.data.l3_func = {
+        this.getData().roofline.l3_func = {
             fn: `min(x * ${model.l3.gbps}, ${model.fp_fma.gflops})`,
             color: 'darkblue'
         };
 
-        this.data.dram_func = {
+        this.getData().roofline.dram_func = {
             fn: `min(x * ${model.dram.gbps}, ${model.fp_fma.gflops})`,
             color: 'darkgrey'
         };
 
-        this.data.fp_func = {
+        this.getData().roofline.fp_func = {
             fn: model.fp.gflops,
             color: 'black',
             graphType: 'scatter',
@@ -1759,34 +1761,34 @@ class RooflineWindow extends Window {
         let plot_data = [];
         let for_turning_x = [];
 
-        if (this.data.bounds.l1) {
-            plot_data.push(this.data.l1_func);
+        if (this.getData().roofline.bounds.l1) {
+            plot_data.push(this.getData().roofline.l1_func);
             for_turning_x.push(model.l1.gbps);
         }
 
-        if (this.data.bounds.l2) {
-            plot_data.push(this.data.l2_func);
+        if (this.getData().roofline.bounds.l2) {
+            plot_data.push(this.getData().roofline.l2_func);
             for_turning_x.push(model.l2.gbps);
         }
 
-        if (this.data.bounds.l3) {
-            plot_data.push(this.data.l3_func);
+        if (this.getData().roofline.bounds.l3) {
+            plot_data.push(this.getData().roofline.l3_func);
             for_turning_x.push(model.l3.gbps);
         }
 
-        if (this.data.bounds.dram) {
-            plot_data.push(this.data.dram_func);
+        if (this.getData().roofline.bounds.dram) {
+            plot_data.push(this.getData().roofline.dram_func);
             for_turning_x.push(model.dram.gbps);
         }
 
-        if (this.data.bounds.fp) {
-            plot_data.push(this.data.fp_func);
+        if (this.getData().roofline.bounds.fp) {
+            plot_data.push(this.getData().roofline.fp_func);
         }
 
         let max_point_x = 0;
         let max_point_y = 0;
 
-        for (const [name, [x, y]] of Object.entries(this.root_window.roofline_dict)) {
+        for (const [name, [x, y]] of Object.entries(this.root_window.getData().roofline_dict)) {
             let scaled_y = y / 1000000000;
 
             plot_data.push({
@@ -1814,10 +1816,10 @@ class RooflineWindow extends Window {
 
         let turning_x = model.fp_fma.gflops / Math.min(...for_turning_x);
 
-        let container = this.dom.find('.roofline');
+        let container = this.getContent().find('.roofline');
 
-        this.data.plot_config = {
-            target: '#' + this.id + '_roofline',
+        this.getData().roofline.plot_config = {
+            target: '#' + this.getId() + '_roofline',
             width: container.width() - 10,
             height: container.height() - 10,
             xAxis: {
@@ -1835,7 +1837,7 @@ class RooflineWindow extends Window {
             data: plot_data
         };
 
-        functionPlot(this.data.plot_config);
+        functionPlot(this.getData().roofline.plot_config);
     }
 }
 
@@ -1864,16 +1866,16 @@ class CodeWindow extends Window {
             // new_window.css('left', 'calc(50% - 375px)');
         };
 
-        if (default_path in root_window.src_cache) {
-            load(root_window.src_cache[default_path]);
+        if (default_path in root_window.getData().src_cache) {
+            load(root_window.getData().src_cache[default_path]);
         } else {
             $.ajax({
                 url: session.id + '/' + entity_id + '/' + node_id + '/' + MODULE_NAME,
                 method: 'POST',
                 dataType: 'text',
-                data: {src: root_window.src_index_dict[default_path]}
+                data: {src: root_window.getData().src_index_dict[default_path]}
             }).done(src_code => {
-                root_window.src_cache[default_path] = src_code;
+                root_window.getData().src_cache[default_path] = src_code;
                 load(src_code);
             }).fail(ajax_obj => {
                 window.alert('Could not load ' + default_path + '!');
@@ -1935,15 +1937,15 @@ class CodeWindow extends Window {
     _setup(data, existing_window) {
         this.root_window = data.root_window;
         for (const f of Object.keys(data.files_and_lines)) {
-            this.dom.find('.code_file').append(
+            this.getContent().find('.code_file').append(
                 new Option(f, f));
         }
-        this.dom.find('.code_file').val(data.default_file);
-        this.dom.find('.code_file').on('change', (event) => {
+        this.getContent().find('.code_file').val(data.default_file);
+        this.getContent().find('.code_file').on('change', (event) => {
             this.onCodeFileChange(event);
         });
 
-        this.data.files_and_lines =
+        this.getData().files_and_lines =
             structuredClone(data.files_and_lines);
 
         this.prepareCodePreview(data.code,
@@ -1960,19 +1962,19 @@ class CodeWindow extends Window {
         let path = event.currentTarget.value;
         let load = (code) => {
             this.prepareCodePreview(code,
-                                    this.data.files_and_lines[path]);
+                                    this.getData().files_and_lines[path]);
         };
 
-        if (path in this.root_window.src_cache) {
-            load(this.root_window.src_cache[path]);
+        if (path in this.root_window.getData().src_cache) {
+            load(this.root_window.getData().src_cache[path]);
         } else {
             $.ajax({
-                url: this.session.id + '/' + this.entity_id + '/' + this.node_id + '/' + MODULE_NAME,
+                url: this.getSession().id + '/' + this.getEntityId() + '/' + this.getNodeId() + '/' + MODULE_NAME,
                 method: 'POST',
                 dataType: 'text',
-                data: {src: this.root_window.src_index_dict[path]}
+                data: {src: this.root_window.getData().src_index_dict[path]}
             }).done(src_code => {
-                this.root_window.src_cache[path] = src_code;
+                this.root_window.getData().src_cache[path] = src_code;
                 load(src_code);
             }).fail(ajax_obj => {
                 window.alert('Could not load ' + path + '!');
@@ -1981,8 +1983,8 @@ class CodeWindow extends Window {
     }
 
     prepareCodePreview(code, lines) {
-        this.dom.find('.code_container').scrollTop(0);
-        let code_box = this.dom.find('.code_box');
+        this.getContent().find('.code_container').scrollTop(0);
+        let code_box = this.getContent().find('.code_box');
         code_box.html('');
 
         for (const attr of code_box[0].attributes) {
@@ -1994,8 +1996,8 @@ class CodeWindow extends Window {
         }
 
         code_box.text(code);
-        this.dom.find('.code_copy_all').off('click');
-        this.dom.find('.code_copy_all').on('click', {
+        this.getContent().find('.code_copy_all').off('click');
+        this.getContent().find('.code_copy_all').on('click', {
             code: code
         }, (event) => {
             navigator.clipboard.writeText(event.data.code);
@@ -2004,14 +2006,14 @@ class CodeWindow extends Window {
 
         let line_to_go = undefined;
 
-        hljs.highlightElement(this.dom.find('.code_box')[0]);
-        hljs.lineNumbersBlockSync(this.dom.find('.code_box')[0]);
+        hljs.highlightElement(this.getContent().find('.code_box')[0]);
+        hljs.lineNumbersBlockSync(this.getContent().find('.code_box')[0]);
 
         let numf = new Intl.NumberFormat('en-US');
 
         for (const [line, how] of Object.entries(lines)) {
-            let num_elem = this.dom.find('.hljs-ln-numbers[data-line-number="' + line + '"]');
-            let line_elem = this.dom.find('.hljs-ln-code[data-line-number="' + line + '"]');
+            let num_elem = this.getContent().find('.hljs-ln-numbers[data-line-number="' + line + '"]');
+            let line_elem = this.getContent().find('.hljs-ln-code[data-line-number="' + line + '"]');
 
             num_elem.css('text-decoration', 'underline');
             num_elem.css('font-weight', 'bold');
@@ -2060,8 +2062,8 @@ class CodeWindow extends Window {
                 line_to_go = 1;
             }
 
-            let container = this.dom.find('.code_container');
-            container.scrollTop(this.dom.find(
+            let container = this.getContent().find('.code_container');
+            container.scrollTop(this.getContent().find(
                 '.hljs-ln-numbers[data-line-number="' + line_to_go + '"]').offset().top -
                                 container.offset().top);
         }
