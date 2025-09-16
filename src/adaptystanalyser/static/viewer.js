@@ -265,6 +265,34 @@ class Window {
         throw new Error('This is an abstract method!');
     }
 
+    // Private, not meant to be called by any external code.
+    #getProcessedContentObject() {
+        let content = $(this.getContentCode());
+
+        // SVGs below are from Google Material Icons, originally licensed under
+        // Apache License 2.0: https://www.apache.org/licenses/LICENSE-2.0.txt
+        // (covered by GNU GPL v3 here)
+
+        // ************************
+        let setUpIcon = (target, code) => {
+            let obj = content.find('[data-icon="' + target + '"]');
+            let path = $(document.createElementNS('http://www.w3.org/2000/svg', 'path'));
+            path.attr('d', code);
+            obj.append(path);
+            obj.attr('xmlns', '');
+            obj.attr('viewBox', '0 -960 960 960');
+        };
+
+        setUpIcon('general', 'M282.67-278h66.66v-203.33h-66.66V-278Zm328 0h66.66v-413.33h-66.66V-278Zm-164 0h66.66v-118.67h-66.66V-278Zm0-203.33h66.66V-548h-66.66v66.67ZM186.67-120q-27 0-46.84-19.83Q120-159.67 120-186.67v-586.66q0-27 19.83-46.84Q159.67-840 186.67-840h586.66q27 0 46.84 19.83Q840-800.33 840-773.33v586.66q0 27-19.83 46.84Q800.33-120 773.33-120H186.67Zm0-66.67h586.66v-586.66H186.67v586.66Zm0-586.66v586.66-586.66Z');
+        setUpIcon('warning', 'm40-120 440-760 440 760H40Zm138-80h604L480-720 178-200Zm302-40q17 0 28.5-11.5T520-280q0-17-11.5-28.5T480-320q-17 0-28.5 11.5T440-280q0 17 11.5 28.5T480-240Zm-40-120h80v-200h-80v200Zm40-100Z');
+        setUpIcon('replace', 'M164-560q14-103 91.5-171.5T440-800q59 0 110.5 22.5T640-716v-84h80v240H480v-80h120q-29-36-69.5-58T440-720q-72 0-127 45.5T244-560h-80Zm620 440L608-296q-36 27-78.5 41.5T440-240q-59 0-110.5-22.5T240-324v84h-80v-240h240v80H280q29 36 69.5 58t90.5 22q72 0 127-45.5T636-480h80q-5 36-18 67.5T664-352l176 176-56 56Z');
+        setUpIcon('download', 'M480-320 280-520l56-58 104 104v-326h80v326l104-104 56 58-200 200ZM240-160q-33 0-56.5-23.5T160-240v-120h80v120h480v-120h80v120q0 33-23.5 56.5T720-160H240Z');
+        setUpIcon('delete', 'M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z');
+        setUpIcon('copy', 'M120-220v-80h80v80h-80Zm0-140v-80h80v80h-80Zm0-140v-80h80v80h-80ZM260-80v-80h80v80h-80Zm100-160q-33 0-56.5-23.5T280-320v-480q0-33 23.5-56.5T360-880h360q33 0 56.5 23.5T800-800v480q0 33-23.5 56.5T720-240H360Zm0-80h360v-480H360v480Zm40 240v-80h80v80h-80Zm-200 0q-33 0-56.5-23.5T120-160h80v80Zm340 0v-80h80q0 33-23.5 56.5T540-80ZM120-640q0-33 23.5-56.5T200-720v80h-80Zm420 80Z');
+        // ************************
+        return content;
+    }
+
     /**
      *  Gets the content of a window in form of an HTML code.
      *
@@ -341,7 +369,7 @@ class Window {
 
         let content = $('<div></div>');
         content.attr('class', 'window_content ' + this.getType() + '_content');
-        content.html(this.getContentCode());
+        content.html(this.#getProcessedContentObject());
 
         root.append(content);
 
@@ -357,6 +385,59 @@ class Window {
             'onclick', `Window.instances['${this.#id}'].close(event)`);
 
         return root;
+    }
+
+    /**
+     *  Downloads a given SVG object in a window as a PNG file.
+     *
+     *  @param {string} [class_name] The class name of an SVG object.
+     *  It is expected that the object has a unique class name within
+     *  the window.
+     *  @param {string} [css] Path to a CSS stylesheet to be applied to
+     *  the SVG object before downloading.
+     *  @param {string} [filename] Filename of the PNG to be saved.
+     *  It may be ignored by a web browser.
+     */
+    downloadSvgAsPng(class_name, css, filename) {
+        // The code here is based on https://stackoverflow.com/a/28226736
+        // (originally CC BY-SA 4.0, covered by GNU GPL v3 here)
+
+        let svg = this.getContent().find('.' + class_name).children()[0].cloneNode(true);
+        let style = document.createElement('style');
+
+        style.innerHTML = '@import url("' + css + '");';
+
+        svg.insertBefore(style, svg.firstChild);
+        console.log((new XMLSerializer()).serializeToString(svg));
+
+        let url = URL.createObjectURL(new Blob(
+            [(new XMLSerializer()).serializeToString(svg)],
+            { type: 'image/svg+xml;charset=utf-8' }));
+
+        let image = new Image();
+        image.onload = () => {
+            let canvas = document.createElement('canvas');
+            canvas.width = image.width;
+            canvas.height = image.height;
+            canvas.getContext('2d').drawImage(image, 0, 0);
+
+            URL.revokeObjectURL(url);
+
+            let a = document.createElement('a');
+            a.download = filename;
+            a.target = '_blank';
+            a.href = canvas.toDataURL('image/png');
+            a.addEventListener('click', (event) => {
+                event.stopPropagation();
+            });
+            a.click();
+        };
+        image.onerror = () => {
+            window.alert('A download error has occurred!');
+        };
+        image.width = svg.width.baseVal.value;
+        image.height = svg.height.baseVal.value;
+        image.src = url;
     }
 
     /**
@@ -490,7 +571,7 @@ class Window {
 
         this.prepareRefresh(this.#setup_data);
 
-        this.#dom.find('.window_content').html(this.getContentCode());
+        this.#dom.find('.window_content').html(this.#getProcessedContentObject());
         this.#setup();
     }
 
