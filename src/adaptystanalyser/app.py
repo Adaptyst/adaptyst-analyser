@@ -4,7 +4,6 @@
 # SPDX-PackageName: Adaptyst Analyser: a tool for analysing performance analysis results
 
 import traceback
-import re
 from flask import Flask, render_template, request
 from pathlib import Path
 from . import PerformanceAnalysisResults
@@ -24,12 +23,13 @@ if 'PERFORMANCE_ANALYSIS_STORAGE' not in app.config:
 
 static_path = Path(app.root_path) / 'static'
 scripts = list(sorted(map(lambda x: x.name,
-                          static_path.glob('*.js'))))
+                          static_path.glob('*.js')))) + \
+    list(sorted(map(lambda x: 'deps/' + x.name,
+                    static_path.glob('deps/*.js'))))
 stylesheets = list(sorted(map(lambda x: x.name,
                               static_path.glob('*.css')))) + \
-    list(sorted(map(lambda x: 'modules/' + x.name,
-                    static_path.glob('modules/*.css'))))
-d3_flamegraph_css = (static_path / 'd3-flamegraph.css').read_text()
+    list(sorted(map(lambda x: 'deps/' + x.name,
+                    static_path.glob('deps/*.css'))))
 
 backends = []
 
@@ -88,7 +88,6 @@ def main():
             app.config['PERFORMANCE_ANALYSIS_STORAGE']),
         scripts=scripts,
         stylesheets=stylesheets,
-        d3_flamegraph_css=d3_flamegraph_css.replace('\n', ' '),
         version='v' + version('adaptyst-analyser'),
         title=title,
         background=background,

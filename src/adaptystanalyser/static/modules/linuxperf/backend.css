@@ -28,16 +28,8 @@
     flex-grow:1;
     white-space:nowrap;
     margin-top:5px;
-    /* Based on https://meta.stackexchange.com/q/364048 */
-    /* (originally CC BY-SA 4.0, covered by GNU GPL v3 here) */
-    font-family:ui-monospace,
-                Cascadia Mono,
-                Segoe UI Mono,
-                Ubuntu Mono,
-                Roboto Mono,
-                Menlo,
-                Monaco,
-                Consolas,
+    font-family:Consolas,
+                ui-monospace,
                 monospace;
 }
 
@@ -51,6 +43,30 @@
 
 .runtime {
     flex-grow:1;
+}
+
+.linuxperf_timeline_window .toolbar {
+    flex-direction:column;
+}
+
+.toolbar_buttons {
+    width:100%;
+}
+
+.toolbar_texts {
+    display:flex;
+    flex-direction:column;
+    margin-top:5px;
+    text-align:center;
+}
+
+.glossary, .off_cpu_sampling_warning, .no_off_cpu_warning {
+    display:none;
+    font-style:italic;
+}
+
+.off_cpu_sampling_warning, .no_off_cpu_warning {
+    margin-top:5px;
 }
 
 .runtime_warning {
@@ -153,14 +169,6 @@
     text-align:center;
     margin-left:5px;
     margin-right:5px;
-}
-
-#threshold_input, #runtime_diff_threshold_input {
-    width:70px;
-}
-
-#off_cpu_scale {
-    width:250px;
 }
 
 .flamegraph_search_results {

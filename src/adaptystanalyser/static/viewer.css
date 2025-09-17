@@ -87,8 +87,6 @@ object {
     margin-left:5px;
 }
 
-
-
 .menu_item, .menu_item_disabled {
     border-top-color:black;
     border-top-width:1px;
@@ -155,6 +153,8 @@ object {
     box-shadow:3px 3px 10px;
     max-height:95%;
     max-width:95%;
+    min-width:250px;
+    min-height:50px;
 }
 
 .window_header {
@@ -201,7 +201,7 @@ object {
     white-space:nowrap;
 }
 
-.window_refresh, .window_visibility, .window_close {
+.window_refresh, .window_visibility, .window_edit_title, .window_close {
     cursor:initial;
     margin-left:5px;
     min-width:24px;
@@ -221,11 +221,6 @@ object {
     box-shadow:3px 3px 10px;
     overflow-y:auto;
     padding:10px;
-}
-
-#glossary, #off_cpu_sampling_warning, #no_off_cpu_warning {
-    display:none;
-    font-style:italic;
 }
 
 .margin_bottom {

@@ -115,6 +115,7 @@ class Window {
     #min_height;
     #last_height;
     #content;
+    #custom_title;
 
     /**
      *  Constructs a Window object and displays a window
@@ -175,6 +176,7 @@ class Window {
         this.#collapsed = false;
         this.#last_focus = Date.now();
         this.#dom = this.#createWindowDOM();
+        this.#custom_title = undefined;
 
         if (x !== undefined && y !== undefined) {
             this.#dom.css('left', x + 'px');
@@ -345,6 +347,14 @@ class Window {
   <!-- This SVG is from Google Material Icons, originally licensed under
        Apache License 2.0: https://www.apache.org/licenses/LICENSE-2.0.txt
        (covered by GNU GPL v3 here) -->
+  <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960"
+       width="24px" class="window_edit_title" onmousedown="stopPropagation(event)">
+    <title>Edit title</title>
+    <path d="M160-400v-80h280v80H160Zm0-160v-80h440v80H160Zm0-160v-80h440v80H160Zm360 560v-123l221-220q9-9 20-13t22-4q12 0 23 4.5t20 13.5l37 37q8 9 12.5 20t4.5 22q0 11-4 22.5T863-380L643-160H520Zm300-263-37-37 37 37ZM580-220h38l121-122-18-19-19-18-122 121v38Zm141-141-19-18 37 37-18-19Z"/>
+  </svg>
+  <!-- This SVG is from Google Material Icons, originally licensed under
+       Apache License 2.0: https://www.apache.org/licenses/LICENSE-2.0.txt
+       (covered by GNU GPL v3 here) -->
   <svg xmlns="http://www.w3.org/2000/svg" class="window_visibility" height="24px"
        viewBox="0 -960 960 960" width="24px" onmousedown="stopPropagation(event)">
     <title>Toggle visibility</title>
@@ -381,63 +391,69 @@ class Window {
             'onclick', `Window.instances['${this.#id}'].onRefreshClick(event)`);
         root.find('.window_visibility').attr(
             'onclick', `Window.instances['${this.#id}'].onVisibilityClick(event)`);
+        root.find('.window_edit_title').attr(
+            'onclick', `Window.instances['${this.#id}'].onEditTitleClick(event)`);
         root.find('.window_close').attr(
             'onclick', `Window.instances['${this.#id}'].close(event)`);
 
         return root;
     }
 
+    // Private, not meant to be called by any external code.
+    onEditTitleClick(event) {
+        let title = window.prompt('Enter a new title for the window. ' +
+                                  'The session prefix will remain ' +
+                                  'unchanged if present.',
+                                  this.#custom_title === undefined ?
+                                  this.getTitle() : this.#custom_title);
+
+        if (title == undefined || title === '') {
+            return;
+        }
+
+        if (this.#session === undefined) {
+            this.#dom.find('.window_title').text(title);
+        } else {
+            this.#dom.find('.window_title').text(
+                '[Session: ' + this.#session.label + '] ' +
+                    title);
+        }
+
+        this.#custom_title = title;
+    }
+
     /**
-     *  Downloads a given SVG object in a window as a PNG file.
+     *  Downloads a given SVG object in a window as an SVG file.
      *
      *  @param {string} [class_name] The class name of an SVG object.
      *  It is expected that the object has a unique class name within
-     *  the window.
-     *  @param {string} [css] Path to a CSS stylesheet to be applied to
-     *  the SVG object before downloading.
-     *  @param {string} [filename] Filename of the PNG to be saved.
-     *  It may be ignored by a web browser.
+     *  the window. Otherwise, the behaviour is undefined.
+     *  @param {string} [css] The path to a CSS stylesheet to be
+     *  applied to the SVG before downloading.
      */
-    downloadSvgAsPng(class_name, css, filename) {
-        // The code here is based on https://stackoverflow.com/a/28226736
-        // (originally CC BY-SA 4.0, covered by GNU GPL v3 here)
+    downloadSvg(class_name, css) {
+        $.ajax({
+            url: css,
+            method: 'GET',
+            dataType: 'text'
+        }).done(res => {
+            let svg = this.getContent().find('.' + class_name).children()[0].cloneNode(true);
 
-        let svg = this.getContent().find('.' + class_name).children()[0].cloneNode(true);
-        let style = document.createElement('style');
+            let style = document.createElement('style');
+            style.innerHTML = res;
+            svg.insertBefore(style, svg.firstChild);
 
-        style.innerHTML = '@import url("' + css + '");';
-
-        svg.insertBefore(style, svg.firstChild);
-        console.log((new XMLSerializer()).serializeToString(svg));
-
-        let url = URL.createObjectURL(new Blob(
-            [(new XMLSerializer()).serializeToString(svg)],
-            { type: 'image/svg+xml;charset=utf-8' }));
-
-        let image = new Image();
-        image.onload = () => {
-            let canvas = document.createElement('canvas');
-            canvas.width = image.width;
-            canvas.height = image.height;
-            canvas.getContext('2d').drawImage(image, 0, 0);
-
-            URL.revokeObjectURL(url);
-
-            let a = document.createElement('a');
-            a.download = filename;
-            a.target = '_blank';
-            a.href = canvas.toDataURL('image/png');
-            a.addEventListener('click', (event) => {
+            let data = document.createElement('a');
+            data.download = 'flamegraph.svg';
+            data.href = 'data:image/svg+xml;charset=utf-8,' +
+                encodeURIComponent((new XMLSerializer()).serializeToString(svg));
+            data.addEventListener('click', event => {
                 event.stopPropagation();
             });
-            a.click();
-        };
-        image.onerror = () => {
-            window.alert('A download error has occurred!');
-        };
-        image.width = svg.width.baseVal.value;
-        image.height = svg.height.baseVal.value;
-        image.src = url;
+            data.click();
+        }).fail(res => {
+            window.alert('Could not download a stylesheet for the SVG!');
+        });
     }
 
     /**
@@ -636,12 +652,14 @@ class Window {
             existing_window = true;
         }
 
-        if (this.#session === undefined) {
-            this.#dom.find('.window_title').html(this.getTitle());
-        } else {
-            this.#dom.find('.window_title').html(
-                '[Session: ' + this.#session.label + '] ' +
-                    this.getTitle());
+        if (this.#custom_title === undefined) {
+            if (this.#session === undefined) {
+                this.#dom.find('.window_title').text(this.getTitle());
+            } else {
+                this.#dom.find('.window_title').text(
+                    '[Session: ' + this.#session.label + '] ' +
+                        this.getTitle());
+            }
         }
 
         this.showLoading();
@@ -671,8 +689,8 @@ class Window {
      *  the window content.
      *
      *  **Important:** This function must call `hideLoading()` at some point.
-     *  Otherwise, there will be a clearly-visible loading indicator in
-     *  the window.
+     *  Otherwise, there will be a loading indicator in the window instead
+     *  of a desired content.
      *
      *  @abstract
      *  @param data Arbitrary data passed to the constructor, e.g.
@@ -918,6 +936,14 @@ class SettingsWindow extends Window {
 <div class="window_space settings_space">
 <div class="centered">Select a backend first to be able to change its settings.</div>
 </div>`;
+    }
+
+    startResize() {
+
+    }
+
+    finishResize() {
+
     }
 
     getTitle() {

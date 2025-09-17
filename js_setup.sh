@@ -8,7 +8,6 @@
 set -e
 
 PROJ_DIR=$(pwd)
-TMP_DIR=/tmp/adaptyst-analyser.setup.$$
 
 function error() {
     echo "====="
@@ -18,8 +17,6 @@ function error() {
     echo "Make sure that npm is installed in your computer."
     echo ""
     echo "If the issue reoccurs, contact the Adaptyst Analyser developers."
-    echo "They may ask you to look at the contents of the temporary directory."
-    echo "If so, look inside $TMP_DIR."
     echo "====="
     exit 2
 }
@@ -34,36 +31,22 @@ if [[ ! -d $PROJ_DIR/src/adaptystanalyser/static ]]; then
     exit 1
 fi
 
-if [[ ! -d $PROJ_DIR/d3-flame-graph ]]; then
-    echo "====="
-    echo "$PROJ_DIR/d3-flame-graph does not exist!"
-    echo ""
-    echo "Run \"git submodule update --init --force\", followed by running this"
-    echo "script from the root folder of the Adaptyst Analyser repository."
-    echo "====="
-    exit 1
-fi
+cd $PROJ_DIR/src/adaptystanalyser/static
+wget https://cdnjs.cloudflare.com/ajax/libs/sigma.js/3.0.2/sigma.min.js
+wget https://cdnjs.cloudflare.com/ajax/libs/graphology/0.26.0/graphology.umd.min.js
 
-cd $PROJ_DIR/d3-flame-graph
-npm install
-
-mkdir $TMP_DIR
-cd $TMP_DIR
-npm init --yes
-npm install --install-links $PROJ_DIR/d3-flame-graph
-npm install function-plot @highlightjs/cdn-assets highlightjs-line-numbers.js sigma graphology chroma-js
-cp node_modules/*/dist/*.min.js node_modules/*/dist/*.css $PROJ_DIR/src/adaptystanalyser/static
-cp node_modules/chroma-js/dist/chroma.min.cjs $PROJ_DIR/src/adaptystanalyser/static/chroma.min.js
-cp node_modules/function-plot/dist/function-plot.js $PROJ_DIR/src/adaptystanalyser/static
-cp node_modules/@highlightjs/cdn-assets/highlight.min.js $PROJ_DIR/src/adaptystanalyser/static
-cp node_modules/@highlightjs/cdn-assets/styles/default.min.css $PROJ_DIR/src/adaptystanalyser/static/highlightjs.css
-npm install vis-timeline@7.7.3
-cp node_modules/vis-timeline/standalone/umd/vis-timeline-graph2d.min.js node_modules/vis-timeline/styles/vis-timeline-graph2d.min.css $PROJ_DIR/src/adaptystanalyser/static
+#npm install function-plot @highlightjs/cdn-assets highlightjs-line-numbers.js sigma graphology chroma-js
+#mkdir $PROJ_DIR/src/adaptystanalyser/static/deps
+#cp node_modules/*/dist/*.min.js node_modules/*/dist/*.css $PROJ_DIR/src/adaptystanalyser/static
+#cp node_modules/chroma-js/dist/chroma.min.cjs $PROJ_DIR/src/adaptystanalyser/static/chroma.min.js
+#cp node_modules/function-plot/dist/function-plot.js $PROJ_DIR/src/adaptystanalyser/static
+#cp node_modules/@highlightjs/cdn-assets/highlight.min.js $PROJ_DIR/src/adaptystanalyser/static
+#cp node_modules/@highlightjs/cdn-assets/styles/default.min.css $PROJ_DIR/src/adaptystanalyser/static/highlightjs.css
+#npm install vis-timeline@7.7.3
+#cp node_modules/vis-timeline/standalone/umd/vis-timeline-graph2d.min.js node_modules/vis-timeline/styles/vis-timeline-graph2d.min.css $PROJ_DIR/src/adaptystanalyser/static
 
 echo "====="
 echo "Done! You can install Adaptyst Analyser now."
-echo "If you get an error below about deleting the temporary directory, you can ignore it."
 echo "====="
 
 cd $PROJ_DIR
-rm -rf $TMP_DIR

@@ -28,26 +28,30 @@ class TimelineWindow extends Window {
     getContentCode() {
         return `
 <div class="toolbar">
-    <svg xmlns="http://www.w3.org/2000/svg" class="general_analyses" data-icon="general"
+    <div class="toolbar_texts">
+      <div class="glossary">
+        <b><font color="#aa0000">Red parts</font></b> are on-CPU and
+        <b><font color="#0294e3">blue parts</font></b> are off-CPU. <b>Right-click</b>
+        any thread/process to open the details menu.
+      </div>
+      <div class="off_cpu_sampling_warning">
+        <b><font color="#ff0000">WARNING:</font></b> The current off-CPU timeline
+        display scale is <span class="off_cpu_scale_value"></span>, which means that <b>the timeline does
+        not show off-CPU periods missing the sampling period of <span class="off_cpu_sampling_period"></span> ms!</b> <b><u>No</u></b> other analyses are affected.
+      </div>
+      <div class="no_off_cpu_warning">
+        <b><font color="#ff0000">WARNING:</font></b> The current off-CPU timeline
+        display scale is 0, which means that <b>the timeline does
+        not show any off-CPU periods!</b> <b><u>No</u></b> other analyses are affected.
+      </div>
+    </div>
+    <div class="toolbar_buttons">
+      <svg xmlns="http://www.w3.org/2000/svg" class="general_analyses" data-icon="general"
          height="24px"
          width="24px" fill="#000000"
          onclick="" class="disabled">
-      <title>General analyses</title>
-    </svg>
-    <div id="glossary">
-      <b><font color="#aa0000">Red parts</font></b> are on-CPU and
-      <b><font color="#0294e3">blue parts</font></b> are off-CPU. <b>Right-click</b>
-      any thread/process to open the details menu.
-    </div>
-    <div id="off_cpu_sampling_warning">
-      <b><font color="#ff0000">WARNING:</font></b> The current off-CPU timeline
-      display scale is <span class="off_cpu_scale_value"></span>, which means that <b>the timeline does
-        not show off-CPU periods missing the sampling period of <span class="off_cpu_sampling_period"></span> ms!</b> <b><u>No</u></b> other analyses are affected.
-    </div>
-    <div id="no_off_cpu_warning">
-      <b><font color="#ff0000">WARNING:</font></b> The current off-CPU timeline
-      display scale is 0, which means that <b>the timeline does
-        not show any off-CPU periods!</b> <b><u>No</u></b> other analyses are affected.
+        <title>General analyses</title>
+      </svg>
     </div>
 </div>
 <div class="window_space linuxperf_timeline"></div>
@@ -277,7 +281,7 @@ class TimelineWindow extends Window {
             } else if (this.getData().offcpu_sampling > 0) {
                 this.getContent().find('.off_cpu_sampling_period').text(this.getData().offcpu_sampling);
                 this.getContent().find('.off_cpu_scale_value').text(
-                    this.getContent().find('.off_cpu_scale').val());
+                    $('#off_cpu_scale').val());
                 this.getContent().find('.off_cpu_sampling_warning').show();
             }
 
@@ -579,7 +583,7 @@ class FlameGraphWindow extends Window {
     </svg>
     <svg xmlns="http://www.w3.org/2000/svg" class="pointer flamegraph_download" height="24px" data-icon="download"
          width="24px" fill="#000000">
-      <title>Download the current flame graph view as PNG</title>
+      <title>Download the current flame graph view as SVG</title>
     </svg>
   </div>
 </div>
@@ -1306,23 +1310,12 @@ class FlameGraphWindow extends Window {
     }
 
     downloadFlameGraph() {
-        let flamegraph_obj = this.getData().flamegraph_obj;
-
-        if (flamegraph_obj === undefined) {
+        if (this.getData().flamegraph_obj === undefined) {
             return;
         }
 
-        let filename = window.prompt(
-            'What filename do you want? ' +
-                '(".png" will be added automatically)');
-
-        if (filename == undefined || filename === "") {
-            return;
-        }
-
-        this.downloadSvgAsPng('flamegraph_svg',
-                              '/static/d3-flamegraph.css',
-                              filename);
+        this.downloadSvg('flamegraph_svg',
+                         '/static/d3-flamegraph.css');
     }
 }
 
