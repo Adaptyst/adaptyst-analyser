@@ -29,7 +29,6 @@ classifiers = [
 
 [project.scripts]
 adaptyst-analyser = "adaptystanalyser.cli:main"
-adaptyst-setup-armodule = "adaptystanalyser.setup:main"
 
 [tool.hatch.version]
 source = "versioningit"
