@@ -55,11 +55,35 @@ def main():
                         action='store_true',
                         help='install the module in editable mode')
     parser.add_argument('-l', dest='list', action='store_true',
-                        help='list all installed Adaptyst Analyser modules')
+                        help='list in detail all installed Adaptyst Analyser '
+                        'modules')
 
     args = parser.parse_args()
 
     if args.list:
+        modules_path = Path(__file__).parent / 'modules'
+        modules = []
+
+        for module_dir in modules_path.glob('*'):
+            metadata_path = module_dir / 'metadata.yml'
+
+            if not metadata_path.exists():
+                continue
+
+            with metadata_path.open(mode='r') as f:
+                metadata = yaml.safe_load(f)
+
+            modules.append((metadata['name'],
+                            metadata['version'],
+                            metadata['short_desc']))
+
+        modules.sort()
+
+        print('Modules installed, listed alphabetically:')
+
+        for name, ver, short_desc in modules:
+            print(f'* {name} {ver}: {short_desc}')
+
         return 0
 
     if args.results is None:
