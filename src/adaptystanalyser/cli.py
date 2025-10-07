@@ -79,10 +79,13 @@ def main():
 
         modules.sort()
 
-        print('Modules installed, listed alphabetically:')
+        if len(modules) > 0:
+            print('Modules installed, listed alphabetically:')
 
-        for name, ver, short_desc in modules:
-            print(f'* {name} {ver}: {short_desc}')
+            for name, ver, short_desc in modules:
+                print(f'* {name} {ver}: {short_desc}')
+        else:
+            print('No modules are installed.')
 
         return 0
 
