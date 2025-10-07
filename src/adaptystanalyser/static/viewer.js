@@ -1042,13 +1042,16 @@ function loadCurrentSession() {
                                       node: node.node,
                                       session: session
                                   }, (event) => {
-                                      $('<link type="text/css" rel="stylesheet" href="/static/' +
-                                        'modules/' + event.data.data.backend_name + '/backend.css" />').appendTo('head');
                                       import('./modules/' + event.data.data.backend_name + '/backend.js')
-                                          .then(function(backend) {
+                                          .then(backend => {
+                                              $('<link type="text/css" rel="stylesheet" href="/static/' +
+                                                'modules/' + event.data.data.backend_name + '/backend.css" />').appendTo('head');
                                               backend.createRootWindow(event.data.data.entity,
                                                                        event.data.data.node,
                                                                        event.data.data.session);
+                                          }, () => {
+                                              window.alert('Could not load the module! ' +
+                                                           'Are you sure it is installed?');
                                           });
                                   }]]);
                 }
