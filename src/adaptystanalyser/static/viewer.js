@@ -5,17 +5,6 @@
 // Adaptyst Analyser: a tool for analysing performance analysis results
 
 /**
- *  Stops further propagation of an event. It may be useful
- *  e.g. for handling mouse clicks.
- *
- *  @param {Object} event Event which propagation should be stopped.
- */
-function stopPropagation(event) {
-    event.stopPropagation();
-    event.preventDefault();
-}
-
-/**
  *  This class represents a performance analysis session.
  */
 class Session {
@@ -97,6 +86,34 @@ class Window {
                 Window.instances[window_id].triggerResize();
             }
         }
+    }
+
+    /**
+     *  Gets the path to the server folder where JavaScript
+     *  and CSS dependencies of modules are stored. Use the
+     *  value returned by this method for constructing
+     *  URLs to the dependencies.
+     *
+     *  @return {string} Path to the folder with JavaScript
+     *                   and CSS module dependencies.
+     *
+     *  @static
+     */
+    static getDepsPath() {
+        return '/static/deps';
+    }
+
+    /**
+     *  Stops further propagation of an event. It may be useful
+     *  e.g. for handling mouse clicks.
+     *
+     *  @param {Object} event Event which propagation should be stopped.
+     *
+     *  @static
+     */
+    static stopPropagation(event) {
+        event.stopPropagation();
+        event.preventDefault();
     }
 
     #id;
@@ -339,7 +356,7 @@ class Window {
        Apache License 2.0: https://www.apache.org/licenses/LICENSE-2.0.txt
        (covered by GNU GPL v3 here) -->
   <svg xmlns="http://www.w3.org/2000/svg" class="window_refresh" height="24px"
-       viewBox="0 -960 960 960" width="24px" onmousedown="stopPropagation(event)">
+       viewBox="0 -960 960 960" width="24px" onmousedown="Window.stopPropagation(event)">
     <title>Reset window contents</title>
     <path d="M480-160q-134 0-227-93t-93-227q0-134 93-227t227-93q69 0 132 28.5T720-690v-110h80v280H520v-80h168q-32-56-87.5-88T480-720q-100 0-170 70t-70 170q0 100
              70 170t170 70q77 0 139-44t87-116h84q-28 106-114 173t-196 67Z"/>
@@ -348,7 +365,7 @@ class Window {
        Apache License 2.0: https://www.apache.org/licenses/LICENSE-2.0.txt
        (covered by GNU GPL v3 here) -->
   <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960"
-       width="24px" class="window_edit_title" onmousedown="stopPropagation(event)">
+       width="24px" class="window_edit_title" onmousedown="Window.stopPropagation(event)">
     <title>Edit title</title>
     <path d="M160-400v-80h280v80H160Zm0-160v-80h440v80H160Zm0-160v-80h440v80H160Zm360 560v-123l221-220q9-9 20-13t22-4q12 0 23 4.5t20 13.5l37 37q8 9 12.5 20t4.5 22q0 11-4 22.5T863-380L643-160H520Zm300-263-37-37 37 37ZM580-220h38l121-122-18-19-19-18-122 121v38Zm141-141-19-18 37 37-18-19Z"/>
   </svg>
@@ -356,7 +373,7 @@ class Window {
        Apache License 2.0: https://www.apache.org/licenses/LICENSE-2.0.txt
        (covered by GNU GPL v3 here) -->
   <svg xmlns="http://www.w3.org/2000/svg" class="window_visibility" height="24px"
-       viewBox="0 -960 960 960" width="24px" onmousedown="stopPropagation(event)">
+       viewBox="0 -960 960 960" width="24px" onmousedown="Window.stopPropagation(event)">
     <title>Toggle visibility</title>
     <path d="M480-320q75 0 127.5-52.5T660-500q0-75-52.5-127.5T480-680q-75 0-127.5 52.5T300-500q0 75 52.5 127.5T480-320Zm0-72q-45 0-76.5-31.5T372-500q0-45
              31.5-76.5T480-608q45 0 76.5 31.5T588-500q0 45-31.5 76.5T480-392Zm0 192q-146 0-266-81.5T40-500q54-137 174-218.5T480-800q146 0 266 81.5T920-500q-54
@@ -366,7 +383,7 @@ class Window {
        Apache License 2.0: https://www.apache.org/licenses/LICENSE-2.0.txt
        (covered by GNU GPL v3 here) -->
   <svg xmlns="http://www.w3.org/2000/svg" class="window_close" height="24px"
-       viewBox="0 -960 960 960" width="24px" onmousedown="stopPropagation(event)">
+       viewBox="0 -960 960 960" width="24px" onmousedown="Window.stopPropagation(event)">
     <title>Close</title>
     <path d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z"/>
   </svg>
@@ -556,7 +573,7 @@ class Window {
 
     // Private, not meant to be called by any external code.
     startDrag(event) {
-        stopPropagation(event);
+        Window.stopPropagation(event);
         this.focus();
 
         let dragged = document.getElementById(this.#id);
@@ -583,7 +600,7 @@ class Window {
 
     // Private, not meant to be called by any external code.
     onRefreshClick(event) {
-        stopPropagation(event);
+        Window.stopPropagation(event);
 
         this.prepareRefresh(this.#setup_data);
 
@@ -703,7 +720,7 @@ class Window {
 
     // Private, not meant to be called by any external code.
     close(event) {
-        stopPropagation(event);
+        Window.stopPropagation(event);
 
         this.prepareClose();
 
@@ -725,7 +742,7 @@ class Window {
 
     // Private, not meant to be called by any external code.
     onVisibilityClick(event) {
-        stopPropagation(event);
+        Window.stopPropagation(event);
 
         let window_content = this.#dom.find('.window_content');
         let window_header = this.#dom.find('.window_header');
@@ -797,7 +814,7 @@ class Menu {
                 'data': v[0],
                 'handler': v[1]
             }, event => {
-                stopPropagation(event);
+                Window.stopPropagation(event);
                 Menu.closeMenu();
 
                 if (event.data.handler !== undefined) {
@@ -868,14 +885,14 @@ class Menu {
 
             if (v.click_handler === undefined) {
                 v.item.on('click', event => {
-                    stopPropagation(event);
+                    Window.stopPropagation(event);
                 });
             } else {
                 v.item.on('click', {
                     'data': v.click_handler[0],
                     'handler': v.click_handler[1]
                 }, event => {
-                    stopPropagation(event);
+                    Window.stopPropagation(event);
                     Menu.closeMenu();
 
                     if (event.data.handler !== undefined) {
