@@ -28,6 +28,7 @@ class Session {
     constructor(id, label) {
         this.id = id;
         this.label = label;
+        this.modules_loaded = {};
         Session.instances[id] = this;
     }
 }
@@ -1044,8 +1045,13 @@ function loadCurrentSession() {
                                   }, (event) => {
                                       import('./modules/' + event.data.data.backend_name + '/backend.js')
                                           .then(backend => {
-                                              $('<link type="text/css" rel="stylesheet" href="/static/' +
-                                                'modules/' + event.data.data.backend_name + '/backend.css" />').appendTo('head');
+                                              if (!(event.data.data.backend_name in
+                                                    event.data.data.session.modules_loaded)) {
+                                                  $('<link type="text/css" rel="stylesheet" href="/static/' +
+                                                    'modules/' + event.data.data.backend_name + '/backend.css" />').appendTo('head');
+                                                  event.data.data.session.modules_loaded[event.data.data.backend_name] = true;
+                                              }
+
                                               backend.createRootWindow(event.data.data.entity,
                                                                        event.data.data.node,
                                                                        event.data.data.session);
