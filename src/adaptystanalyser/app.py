@@ -25,7 +25,9 @@ static_path = Path(app.root_path) / 'static'
 scripts = list(sorted(map(lambda x: x.name,
                           static_path.glob('*.js')))) + \
     list(sorted(map(lambda x: 'deps/' + x.name,
-                    static_path.glob('deps/*.js'))))
+                    static_path.glob('deps/*.js')))) + \
+    list(sorted(map(lambda x: 'deps/' + x.name,
+                    static_path.glob('deps/*.cjs'))))
 stylesheets = list(sorted(map(lambda x: x.name,
                               static_path.glob('*.css')))) + \
     list(sorted(map(lambda x: 'deps/' + x.name,

@@ -15,6 +15,7 @@ from urllib.parse import urlparse
 from pathlib import Path
 from importlib import import_module
 from importlib.metadata import version
+from tempfile import NamedTemporaryFile
 
 
 def main():
@@ -47,13 +48,13 @@ def main():
                         default='', help='custom background CSS of the '
                         'website (syntax is the same as in "background" in '
                         'CSS, do not use semicolons)')
-    parser.add_argument('-u', '--update', dest='update', action='store_true',
+    parser.add_argument('-u', dest='update', action='store_true',
                         help='update/reinstall the module if it is already '
                         'installed')
-    parser.add_argument('-e', '--editable', dest='editable',
+    parser.add_argument('-e', dest='editable',
                         action='store_true',
                         help='install the module in editable mode')
-    parser.add_argument('-l', '--list', dest='list', action='store_true',
+    parser.add_argument('-l', dest='list', action='store_true',
                         help='list all installed Adaptyst Analyser modules')
 
     args = parser.parse_args()
@@ -187,7 +188,7 @@ def main():
                 shutil.rmtree(module_python_path)
             else:
                 print(f'adaptyst-analyser: error: {metadata["name"]} '
-                      'is already installed, use the --update flag',
+                      'is already installed, use the -u flag',
                       file=sys.stderr)
                 return 3
 
@@ -202,18 +203,20 @@ def main():
                 shutil.rmtree(module_web_path)
             else:
                 print(f'adaptyst-analyser: error: {metadata["name"]} '
-                      'is already installed, use the --update flag',
+                      'is already installed, use the -u flag',
                       file=sys.stderr)
                 return 3
 
         module_web_path.mkdir(parents=True)
+        global_deps_path.mkdir(parents=True, exist_ok=True)
 
         def install(item, module_path):
             if item.is_dir():
                 shutil.copytree(item, module_path / item.name,
-                                dirs_exist_ok=True)
+                                dirs_exist_ok=True, symlinks=True)
             else:
-                shutil.copy(item, module_path / item.name)
+                shutil.copy2(item, module_path / item.name,
+                             follow_symlinks=False)
 
         if 'python_dependencies' in metadata:
             pip_command = ['pip', 'install'] + \
@@ -239,40 +242,41 @@ def main():
                           file=sys.stderr)
                     return 2
 
-                if item.is_symlink() and not item.resolve().is_file():
-                    print('adaptyst-analyser: warning: '
-                          f'skipping non-file {str(item)} in deps',
-                          file=sys.stderr)
-                    continue
-                elif not item.is_file():
+                if (item.is_symlink() and not item.resolve().is_file()) or \
+                   not item.is_file():
                     print('adaptyst-analyser: warning: '
                           f'skipping non-file {str(item)} in deps',
                           file=sys.stderr)
                     continue
 
-                if item.suffix not in ['.js', '.css']:
+                if item.suffix not in ['.js', '.cjs', '.css']:
                     print('adaptyst-analyser: warning: '
                           f'skipping file {str(item)} in deps as it is '
-                          'neither .js nor .css',
+                          'neither .js, .cjs, nor .css',
                           file=sys.stderr)
                     continue
 
                 if (global_deps_path / item.name).exists():
                     src_file = item
-
-                    if src_file.is_symlink():
-                        src_file = src_file.resolve()
-
                     dst_file = global_deps_path / item.name
 
-                    if dst_file.is_symlink():
-                        dst_file = dst_file.resolve()
-
-                    if filecmp.cmp(src_file, dst_file,
-                                   shallow=False):
+                    if (src_file.is_symlink() and dst_file.is_symlink() and
+                        src_file.resolve() == dst_file.resolve()) or \
+                        (src_file.is_file() and dst_file.is_file() and
+                         filecmp.cmp(src_file, dst_file, shallow=False)):
                         continue
                     else:
-                        pass
+                        answer = ''
+                        while answer not in ['Y', 'y', 'N', 'n']:
+                            answer = \
+                                input(f'{str(dst_file)} already exists and is '
+                                      'different than the file from the '
+                                      'module you are installing. Do you '
+                                      'want to replace the destination file? '
+                                      '[Y/N] ')
+
+                        if answer in ['N', 'n']:
+                            continue
 
                 if args.editable:
                     (global_deps_path / item.name).symlink_to(
@@ -282,10 +286,41 @@ def main():
 
         if 'js_url_dependencies' in metadata:
             for url in metadata['js_url_dependencies']:
+                path = Path(urlparse(url).path)
+                dst_file = global_deps_path / path.name
+
+                if path.suffix not in ['.js', '.cjs', '.css']:
+                    print('adaptyst-analyser: warning: '
+                          f'skipping URL {url} as it is neither '
+                          '.js, .cjs, nor .css', file=sys.stderr)
+                    continue
+
                 with urllib.request.urlopen(url) as data:
-                    with (global_deps_path /
-                          Path(urlparse(url).path).name).open(mode='wb') as f:
-                        shutil.copyfileobj(data, f)
+                    with NamedTemporaryFile(delete=False) as tf:
+                        shutil.copyfileobj(data, tf)
+                        tf_path = Path(tf.name)
+
+                    if dst_file.exists() and \
+                       (dst_file.is_symlink() or
+                       not filecmp.cmp(tf_path, dst_file, shallow=False)):
+                        answer = ''
+                        while answer not in ['Y', 'y', 'N', 'n']:
+                            answer = \
+                                input(f'{str(dst_file)} already exists '
+                                      'and is different than the file '
+                                      'from the module you are '
+                                      'installing. Do you want to replace '
+                                      'the destination file? [Y/N] ')
+
+                        if answer in ['N', 'n']:
+                            tf_path.unlink()
+                            continue
+
+                    if (global_deps_path / path.name).exists():
+                        (global_deps_path / path.name).unlink()
+
+                    shutil.copy2(tf_path, global_deps_path / path.name)
+                    tf_path.unlink()
 
         for item in web_path.iterdir():
             if item.name == 'deps':
@@ -306,15 +341,46 @@ def main():
 
         print(f'adaptyst-analyser: {metadata["name"]} '
               'installed successfully')
+        return 0
     else:
         print('Adaptyst Analyser module directory not detected, running in '
               'performance analysis result inspection mode...',
               file=sys.stderr)
 
+        module_path = Path(__file__).parent / 'modules'
+
+        if module_path.exists():
+            modules = list(map(lambda x: x.name,
+                               module_path.glob('*')))
+
+            if len(modules) > 0:
+                print(f'Modules installed: {modules}', file=sys.stderr)
+            else:
+                print('No modules installed')
+        else:
+            print('No modules installed')
+
+        js_dependencies = {
+            'sigma.min.js': 'https://cdnjs.cloudflare.com/ajax/libs' +
+            '/sigma.js/3.0.2/sigma.min.js',
+            'graphology.umd.min.js': 'https://cdnjs.cloudflare.com/ajax/libs' +
+            '/graphology/0.26.0/graphology.umd.min.js'
+        }
+
+        static_path = Path(__file__).parent / 'static'
+
+        for name, url in js_dependencies.items():
+            if not (static_path / name).exists():
+                print(f'{name} is not installed, downloading it from {url}...',
+                      file=sys.stderr)
+
+                with urllib.request.urlopen(url) as data:
+                    with (static_path / name).open(mode='wb') as f:
+                        shutil.copyfileobj(data, f)
+
         env = os.environ.copy()
         env.update({
             'FLASK_PERFORMANCE_ANALYSIS_STORAGE': str(result_path),
-            'FLASK_OFFCPU_SAMPLING': str(args.off_cpu_sampling / 100),
             'FLASK_CUSTOM_TITLE': args.title,
             'FLASK_BACKGROUND_CSS': args.background
         })

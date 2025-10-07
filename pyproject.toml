@@ -16,7 +16,7 @@ description = "A tool for analysing performance analysis results returned e.g. b
 requires-python = ">=3.8"
 dependencies = [
   "Jinja2",
-  "treelib",
+  "PyYAML",
   "flask",
   "gunicorn",
   "pytest",
@@ -44,6 +44,3 @@ sources = ["src"]
 [tool.hatch.build.targets.sdist]
 only-include = ["src/adaptystanalyser"]
 sources = ["src"]
-
-[tool.hatch.build.hooks.custom]
-path = "js_setup.py"
