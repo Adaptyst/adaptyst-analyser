@@ -31,6 +31,50 @@ class Session {
         this.modules_loaded = {};
         Session.instances[id] = this;
     }
+
+    /**
+     *  Sends a request to the server side of Adaptyst Analyser.
+     *  The request will be handled by the Python code of a
+     *  corresponding Adaptyst Analyser module.
+     *
+     *  Use Window.sendRequest() to send requests if you can.
+     *  Calling Session.sendRequest() is preferred only in case
+     *  you don't have an eligible Window-inheriting object and
+     *  don't want to create one.
+     *
+     *  @param {string} entity ID of an entity.
+     *  @param {string} node ID of a node.
+     *  @param {string} module Name of a module.
+     *  @param {Object} data Data to be sent in form of JSON.
+     *  @param done_func Function to be called when the request
+     *  succeeds. The function must take exactly one argument
+     *  which is the content returned by the server side.
+     *  @param fail_func Function to be called when the request
+     *  fails for any reason. The function must take exactly the
+     *  arguments described in the "error" entry of "settings"
+     *  in the jQuery.ajax() documentation
+     *  [here](https://api.jquery.com/jQuery.ajax).
+     *  @param {string} content_type Content type expected from
+     *  the server side. Use one of the values explained in
+     *  the "dataType" entry in "settings" in the jQuery.ajax
+     *  documentation [here](https://api.jquery.com/jQuery.ajax).
+     *  It can be undefined, this is then interpreted as 'json'.
+     */
+    sendRequest(entity, node, module, data, done_func, fail_func,
+                content_type) {
+        if (content_type === undefined) {
+            content_type = 'json';
+        }
+
+        $.ajax({
+            url: this.id + '/' + entity + '/' + node + '/' + module,
+            method: 'POST',
+            dataType: content_type,
+            data: data
+        }).done((data, status, xhr) => {
+            done_func(data);
+        }).fail(fail_func);
+    }
 }
 
 /**
@@ -216,6 +260,38 @@ class Window {
     }
 
     /**
+     *  Sends a request to the server side of Adaptyst Analyser.
+     *  The request will be handled by the Python code of a
+     *  corresponding Adaptyst Analyser module.
+     *
+     *  Use this function only if you have constructed your
+     *  object with all of an entity ID, a node ID, and a module
+     *  name.
+     *
+     *  @param {Object} data Data to be sent in form of JSON.
+     *  @param done_func Function to be called when the request
+     *  succeeds. The function must take exactly one argument
+     *  which is a JSON object returned by the server side.
+     *  @param fail_func Function to be called when the request
+     *  fails for any reason. The function must take exactly the
+     *  arguments described in the "error" entry of "settings"
+     *  in the jQuery.ajax() documentation
+     *  [here](https://api.jquery.com/jQuery.ajax).
+     *  @param {string} content_type Content type expected from
+     *  the server side. Use one of the values explained in
+     *  the "dataType" entry in "settings" in the jQuery.ajax
+     *  documentation [here](https://api.jquery.com/jQuery.ajax).
+     *  It can be undefined, this is then interpreted as 'json'.
+     */
+    sendRequest(data, done_func, fail_func, content_type) {
+        this.getSession().sendRequest(this.getEntityId(),
+                                      this.getNodeId(),
+                                      this.getModuleName(),
+                                      data, done_func, fail_func,
+                                      content_type);
+    }
+
+    /**
      *  Gets the last time a window was focused.
      *
      *  @return Last time a window was focused,
@@ -236,7 +312,8 @@ class Window {
     }
 
     /**
-     *  Gets the entity ID of a window.
+     *  Gets the entity ID of a window. It can be
+     *  undefined.
      *
      *  @return {string} Entity ID of a window.
      */
@@ -245,12 +322,23 @@ class Window {
     }
 
     /**
-     *  Gets the node ID of a window.
+     *  Gets the node ID of a window. It can be
+     *  undefined.
      *
      *  @return {string} Node ID of a window.
      */
     getNodeId() {
         return this.#node_id;
+    }
+
+    /**
+     *  Gets the module name of a window. It can be
+     *  undefined.
+     *
+     *  @return {string} Module name of a window.
+     */
+    getModuleName() {
+        return this.#module_name;
     }
 
     /**
