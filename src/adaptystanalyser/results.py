@@ -6,6 +6,7 @@
 import json
 import yaml
 import random
+import html
 from pathlib import Path
 from collections import defaultdict
 
@@ -228,8 +229,9 @@ class PerformanceAnalysisResults:
         entities = {}
 
         for entity in self._system['entities'].keys():
-            entities[entity] = [self._entity_exit_codes.get(entity, -1),
-                                '#808080']
+            exit_code = self._entity_exit_codes.get(entity, -1)
+            entity = html.escape(entity)
+            entities[entity] = [exit_code, '#808080']
 
             if entity in self._entity_colours:
                 used_colours.add(self._entity_colours[entity])
@@ -264,7 +266,7 @@ class PerformanceAnalysisResults:
                             'y': 0,
                             'label': k,
                             'size': 50,
-                            'color': entities[entity][1],
+                            'color': entities[html.escape(entity)][1],
                             'entity': entity,
                             'backends': [[x['name'],
                                           self._used_module_vers[entity][k].get(x['name'], [])]
