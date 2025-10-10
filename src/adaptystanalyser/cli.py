@@ -51,9 +51,9 @@ def main():
     parser.add_argument('-u', dest='update', action='store_true',
                         help='update/reinstall the module if it is already '
                         'installed')
-    parser.add_argument('-e', dest='editable',
+    parser.add_argument('-d', dest='development',
                         action='store_true',
-                        help='install the module in editable mode')
+                        help='install the module in development mode')
     parser.add_argument('-l', dest='list', action='store_true',
                         help='list in detail all installed Adaptyst Analyser '
                         'modules')
@@ -305,7 +305,7 @@ def main():
                         if answer in ['N', 'n']:
                             continue
 
-                if args.editable:
+                if args.development:
                     (global_deps_path / item.name).symlink_to(
                         item.resolve())
                 else:
@@ -353,13 +353,13 @@ def main():
             if item.name == 'deps':
                 continue
 
-            if args.editable:
+            if args.development:
                 (module_web_path / item.name).symlink_to(item.resolve())
             else:
                 install(item, module_web_path)
 
         for item in python_path.iterdir():
-            if args.editable:
+            if args.development:
                 (module_python_path / item.name).symlink_to(item.resolve())
             else:
                 install(item, module_python_path)
