@@ -1097,6 +1097,24 @@ class SettingsWindow extends Window {
 
 // Private, not meant to be called by any external code.
 function loadCurrentSession() {
+    let versionLessThan = (a, b) => {
+        for (var i = 0; i < Math.min(a.length, b.length); i++) {
+            if (a[i] > b[i]) {
+                return false;
+            }
+
+            if (a[i] < b[i]) {
+                return true;
+            }
+        }
+
+        if (a.length >= b.length) {
+            return false;
+        } else {
+            return true;
+        }
+    };
+
     $('#refresh').attr('class', 'disabled');
     $('#refresh').attr('onclick', '');
     $('#block').html('');
@@ -1107,6 +1125,7 @@ function loadCurrentSession() {
         let label = $(this).attr('data-label');
         let session = id in Session.instances ? Session.instances[id] :
             new Session(id, label);
+        let min_mod_vers = JSON.parse($('#viewer_script').attr('data-min-mod-vers'));
 
         $.ajax({
             url: id + '/',
@@ -1119,18 +1138,39 @@ function loadCurrentSession() {
             });
             view.on('doubleClickNode', (node) => {
                 node.event.preventSigmaDefault();
-                let backend_names = graph.getNodeAttribute(node.node, 'backends');
+                let backends = graph.getNodeAttribute(node.node, 'backends');
                 let entity = graph.getNodeAttribute(node.node, 'entity');
                 let options = [];
 
-                for (let name of backend_names) {
-                    options.push([name,
+                for (let [name, version] of backends) {
+                    let item_label = name;
+
+                    if (version.length === 0) {
+                        item_label += ' (unknown version)';
+                    }
+
+                    options.push([item_label,
                                   [{
                                       backend_name: name,
                                       entity: entity,
                                       node: node.node,
                                       session: session
                                   }, (event) => {
+                                      if (version.length > 0 && (name in min_mod_vers) &&
+                                          min_mod_vers[name].length > 0 &&
+                                          versionLessThan(version, min_mod_vers[name])) {
+                                          let proceed =
+                                              window.confirm('The Adaptyst module used for producing the results is ' +
+                                                             'older than the minimum version supported by the ' +
+                                                             'corresponding Adaptyst Analyser module!\n\n' +
+                                                             'Expect errors and incorrect behaviours. Click ' +
+                                                             'OK if you want to proceed.');
+
+                                          if (!proceed) {
+                                              return;
+                                          }
+                                      }
+
                                       import('./modules/' + event.data.data.backend_name + '/backend.js')
                                           .then(backend => {
                                               if (!(event.data.data.backend_name in

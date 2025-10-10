@@ -7,6 +7,7 @@ import json
 import yaml
 import random
 from pathlib import Path
+from collections import defaultdict
 
 
 class Identifier:
@@ -174,29 +175,59 @@ class PerformanceAnalysisResults:
         with (self._path / 'system' / 'system.yml').open(mode='r') as f:
             self._system = yaml.safe_load(f)
 
-        self._node_backends = {}
+        self._used_module_vers = defaultdict(lambda: defaultdict(dict))
 
-        for entity in self._system['entities'].values():
+        for entity_name, entity in self._system['entities'].items():
             for node, settings in entity['nodes'].items():
-                self._node_backends[node] = [x['name']
-                                             for x in settings['modules']]
+                for mod in settings['modules']:
+                    name = mod['name']
+                    mod_meta_path = self._path / 'system' / entity_name / \
+                        node / name / 'dirmeta.json'
+
+                    if not mod_meta_path.exists():
+                        continue
+
+                    with mod_meta_path.open(mode='r') as f:
+                        mod_meta = json.load(f)
+
+                    if 'version' not in mod_meta:
+                        continue
+
+                    self._used_module_vers[entity_name][node][name] = mod_meta['version']
+
+        if (self._path / 'entity_colours.json').exists():
+            with (self._path / 'entity_colours.json').open(mode='r') as f:
+                self._entity_colours = json.load(f)
+        else:
+            self._entity_colours = {}
+
+    def _set_entity_colour(self, entity, colour):
+        self._entity_colours[entity] = colour
+
+        with (self._path / 'entity_colours.json').open(mode='w') as f:
+            f.write(json.dumps(self._entity_colours))
 
     def get_system_graph(self):
         used_colours = set()
         entities = {}
 
         for entity in self._system['entities'].keys():
-            colour = (random.randrange(100, 181, 10),
-                      random.randrange(100, 181, 10),
-                      random.randrange(100, 181, 10))
-
-            while colour in used_colours:
+            if entity in self._entity_colours:
+                used_colours.add(self._entity_colours[entity])
+                entities[entity] = self._entity_colours[entity]
+            else:
                 colour = (random.randrange(100, 181, 10),
                           random.randrange(100, 181, 10),
                           random.randrange(100, 181, 10))
 
-            used_colours.add(colour)
-            entities[entity] = f'#{colour[0]:02x}{colour[1]:02x}{colour[2]:02x}'
+                while colour in used_colours:
+                    colour = (random.randrange(100, 181, 10),
+                              random.randrange(100, 181, 10),
+                              random.randrange(100, 181, 10))
+
+                used_colours.add(colour)
+                entities[entity] = f'#{colour[0]:02x}{colour[1]:02x}{colour[2]:02x}'
+                self._set_entity_colour(entity, entities[entity])
 
         return json.dumps({
             'entities': entities,
@@ -216,7 +247,9 @@ class PerformanceAnalysisResults:
                             'size': 50,
                             'color': entities[entity],
                             'entity': entity,
-                            'backends': [x['name'] for x in v['modules']]
+                            'backends': [[x['name'],
+                                          self._used_module_vers[entity][k].get(x['name'], [])]
+                                          for x in v['modules']]
                         }
                     }
                     for entity in self._system['entities'].keys()

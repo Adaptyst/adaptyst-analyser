@@ -4,6 +4,8 @@
 # SPDX-PackageName: Adaptyst Analyser: a tool for analysing performance analysis results
 
 import traceback
+import yaml
+import json
 from flask import Flask, render_template, request
 from pathlib import Path
 from . import PerformanceAnalysisResults
@@ -40,6 +42,14 @@ for p in static_path.glob('modules/*/settings.html'):
     backend['name'] = p.parent.name
     backend['settings_code'] = p.read_text()
     backends.append(backend)
+
+min_mod_vers = {}
+
+for p in Path(app.root_path).glob('modules/*/metadata.yml'):
+    mod_id = p.parent.name
+    with p.open(mode='r') as f:
+        metadata = yaml.safe_load(f)
+    min_mod_vers[mod_id] = metadata.get('min_module_version', [])
 
 
 @app.get('/<identifier>/')
@@ -93,4 +103,5 @@ def main():
         version='v' + version('adaptyst-analyser'),
         title=title,
         background=background,
-        backends=backends)
+        backends=backends,
+        min_mod_vers=json.dumps(min_mod_vers))
