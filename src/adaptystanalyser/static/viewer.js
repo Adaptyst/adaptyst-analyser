@@ -669,7 +669,7 @@ class Window {
         let startX = event.offsetX;
         let startY = event.offsetY;
 
-        $('body').mousemove(function(event) {
+        $('body').mousemove(event => {
             event.stopPropagation();
             event.preventDefault();
             let newX = event.pageX - startX;
@@ -681,7 +681,7 @@ class Window {
             dragged.style.top = newY + 'px';
         });
 
-        $('body').mouseup(function(event) {
+        $('body').mouseup(event => {
             $('body').off('mousemove');
             $('body').off('mouseup');
         });
@@ -822,7 +822,7 @@ class Window {
             return;
         }
 
-        keys.sort(function comp(a, b) {
+        keys.sort((a, b) => {
             return Window.instances[b].getLastFocusTime() - Window.instances[a].getLastFocusTime();
         });
 
@@ -1130,7 +1130,7 @@ function loadCurrentSession() {
         $.ajax({
             url: id + '/',
             method: 'GET'
-        }).done(function(ajax_obj) {
+        }).done(ajax_obj => {
             let response = JSON.parse(ajax_obj);
             let graph = graphology.Graph.from(response.system);
             let view = new Sigma(graph, $('#block')[0], {
@@ -1200,7 +1200,7 @@ function loadCurrentSession() {
                                    'with a detailed analysis of the node done by the module.');
             $('#refresh').attr('class', '');
             $('#refresh').attr('onclick', 'loadCurrentSession()');
-        }).fail(function(ajax_obj) {
+        }).fail(ajax_obj => {
             $('#loading').hide();
             if (ajax_obj.status === 500) {
                 $('#footer_text').html('<b><font color="red">Could not load the session because of an ' +
