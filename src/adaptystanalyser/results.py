@@ -193,13 +193,29 @@ class PerformanceAnalysisResults:
                     if 'version' not in mod_meta:
                         continue
 
-                    self._used_module_vers[entity_name][node][name] = mod_meta['version']
+                    self._used_module_vers[entity_name][node][name] = \
+                        mod_meta['version']
 
         if (self._path / 'entity_colours.json').exists():
             with (self._path / 'entity_colours.json').open(mode='r') as f:
                 self._entity_colours = json.load(f)
         else:
             self._entity_colours = {}
+
+        self._entity_exit_codes = {}
+
+        for entity_dir in (self._path / 'system').glob('*'):
+            if not entity_dir.is_dir():
+                continue
+
+            if not (entity_dir / 'dirmeta.json').exists():
+                continue
+
+            with (entity_dir / 'dirmeta.json').open(mode='r') as f:
+                metadata = json.load(f)
+
+            self._entity_exit_codes[entity_dir.name] = \
+                metadata.get('exit_code', -1)
 
     def _set_entity_colour(self, entity, colour):
         self._entity_colours[entity] = colour
@@ -212,9 +228,12 @@ class PerformanceAnalysisResults:
         entities = {}
 
         for entity in self._system['entities'].keys():
+            entities[entity] = [self._entity_exit_codes.get(entity, -1),
+                                '#808080']
+
             if entity in self._entity_colours:
                 used_colours.add(self._entity_colours[entity])
-                entities[entity] = self._entity_colours[entity]
+                entities[entity][1] = self._entity_colours[entity]
             else:
                 colour = (random.randrange(100, 181, 10),
                           random.randrange(100, 181, 10),
@@ -226,8 +245,8 @@ class PerformanceAnalysisResults:
                               random.randrange(100, 181, 10))
 
                 used_colours.add(colour)
-                entities[entity] = f'#{colour[0]:02x}{colour[1]:02x}{colour[2]:02x}'
-                self._set_entity_colour(entity, entities[entity])
+                entities[entity][1] = f'#{colour[0]:02x}{colour[1]:02x}{colour[2]:02x}'
+                self._set_entity_colour(entity, entities[entity][1])
 
         return json.dumps({
             'entities': entities,
@@ -245,7 +264,7 @@ class PerformanceAnalysisResults:
                             'y': 0,
                             'label': k,
                             'size': 50,
-                            'color': entities[entity],
+                            'color': entities[entity][1],
                             'entity': entity,
                             'backends': [[x['name'],
                                           self._used_module_vers[entity][k].get(x['name'], [])]

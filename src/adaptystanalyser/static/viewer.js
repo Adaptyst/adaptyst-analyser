@@ -1195,9 +1195,42 @@ function loadCurrentSession() {
                                 options);
             });
             $('#loading').hide();
-            $('#footer_text').text('You can see a graph describing your computer system. ' +
-                                   'Double-click any node and select a module to open an internal window ' +
-                                   'with a detailed analysis of the node done by the module.');
+
+            let non_zero_exit_codes = [];
+
+            for (const [entity, data] of Object.entries(response.entities)) {
+                if (data[0] > 0) {
+                    non_zero_exit_codes.push([entity, data[0]]);
+                }
+            }
+
+            if (non_zero_exit_codes.length === 0) {
+                $('#footer_text').text('You can see a graph describing your computer system. ' +
+                                       'Double-click any node and select a module to open an internal window ' +
+                                       'with a detailed analysis of the node done by the module.');
+            } else {
+                let entity_cnt_hover = '';
+
+                for (let i = 0; i < non_zero_exit_codes.length; i++) {
+                    entity_cnt_hover += non_zero_exit_codes[i][0] + ': exit code ' +
+                        non_zero_exit_codes[i][1] +
+                        (non_zero_exit_codes[i][1] === 255 ? ' (may suggest a fatal error, ' +
+                         'e.g. a seg fault)' : '') +
+                        (i < non_zero_exit_codes.length - 1 ? '\n' : '');
+                }
+
+                $('#footer_text').html('You can see a graph describing your computer system. ' +
+                                       'Double-click any node and select a module to open an internal window ' +
+                                       'with a detailed analysis of the node done by the module.<br />' +
+                                       '<b><font color="#ff9900">WARNING:</font></b> The workflow in ' +
+                                       '<span style="cursor:help; text-decoration:underline" ' +
+                                       'title="' + entity_cnt_hover + '">' +
+                                       (non_zero_exit_codes.length === 1 ? '1 entity' :
+                                        (non_zero_exit_codes.length) + ' entities') + '</span> ' +
+                                       'returned a non-zero exit code. Hover over the underlined text to ' +
+                                       'see more details.');
+            }
+
             $('#refresh').attr('class', '');
             $('#refresh').attr('onclick', 'loadCurrentSession()');
         }).fail(ajax_obj => {
