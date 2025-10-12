@@ -32,6 +32,8 @@ scripts = list(sorted(map(lambda x: x.name,
                     static_path.glob('deps/*.cjs'))))
 stylesheets = list(sorted(map(lambda x: x.name,
                               static_path.glob('*.css')))) + \
+    list(sorted(map(lambda x: 'modules/' + x.parent.name + '/settings.css',
+                    static_path.glob('modules/*/settings.css')))) + \
     list(sorted(map(lambda x: 'deps/' + x.name,
                     static_path.glob('deps/*.css'))))
 
