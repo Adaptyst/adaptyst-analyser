@@ -48,6 +48,9 @@ def main():
                         default='', help='custom background CSS of the '
                         'website (syntax is the same as in "background" in '
                         'CSS, do not use semicolons)')
+    parser.add_argument('--force-reinstall', dest='reinstall_js_deps',
+                        action='store_true', help='reinstall all core JavaScript '
+                        'dependencies even if they are already installed')
     parser.add_argument('-u', dest='update', action='store_true',
                         help='update/reinstall the module if it is already '
                         'installed')
@@ -397,8 +400,8 @@ def main():
         static_path = Path(__file__).parent / 'static'
 
         for name, url in js_dependencies.items():
-            if not (static_path / name).exists():
-                print(f'{name} is not installed, downloading it from {url}...',
+            if args.reinstall_js_deps or not (static_path / name).exists():
+                print(f'Downloading {name} from {url}...',
                       file=sys.stderr)
 
                 with urllib.request.urlopen(url) as data:
