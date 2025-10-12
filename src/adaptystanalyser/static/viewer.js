@@ -869,7 +869,12 @@ class Menu {
     /**
      *  Creates and displays a menu.
      *
+     *  If you want to refer to the menu block in CSS, use
+     *  .<name_prefix>_menu.
+     *
      *  @static
+     *  @param {String} name_prefix Prefix to use for the menu
+     *  block class in CSS.
      *  @param {int} x x-part of the upper-left corner position
      *  of a menu.
      *  @param {int} y y-part of the upper-left corner position
@@ -883,8 +888,14 @@ class Menu {
      *  data>` will be accessible in a click handler through
      *  `event.data.data`.
      */
-    static createMenu(x, y, options) {
-        let menu = $('<div id="menu" class="menu_block"></div>');
+    static createMenu(name_prefix, x, y, options) {
+        if (name_prefix.includes('"') || name_prefix.includes(' ')) {
+            window.alert('Illegal characters in ' +
+                         'name_prefix in createMenu()!');
+            return;
+        }
+
+        let menu = $('<div id="menu" class="menu_block ' + name_prefix + '_menu"></div>');
         let first = true;
 
         for (const [k, v] of options) {
@@ -939,7 +950,12 @@ class Menu {
     /**
      *  Creates and displays a menu with custom-made blocks.
      *
+     *  If you want to refer to the menu block in CSS, use
+     *  .<name_prefix>_menu.
+     *
      *  @static
+     *  @param {String} name_prefix Prefix to use for the menu
+     *  block class in CSS.
      *  @param {int} x x-part of the upper-left corner position
      *  of a menu.
      *  @param {int} y y-part of the upper-left corner position
@@ -954,10 +970,16 @@ class Menu {
      *  is the same as in `createMenu()`. `<hover>` is optional,
      *  its default value is false.
      */
-    static createMenuWithCustomBlocks(x, y, blocks) {
+    static createMenuWithCustomBlocks(name_prefix, x, y, blocks) {
         Menu.closeMenu();
 
-        let menu = $('<div id="menu" class="menu_block"></div>');
+        if (name_prefix.includes('"') || name_prefix.includes(' ')) {
+            window.alert('Illegal characters in ' +
+                         'name_prefix in createMenuWithCustomBlocks()!');
+            return;
+        }
+
+        let menu = $('<div id="menu" class="menu_block ' + name_prefix + '_menu"></div>');
         let first = true;
 
         for (const v of blocks) {
@@ -1190,7 +1212,8 @@ function loadCurrentSession() {
                                   }]]);
                 }
 
-                Menu.createMenu(node.event.original.pageX,
+                Menu.createMenu('system_graph',
+                                node.event.original.pageX,
                                 node.event.original.pageY,
                                 options);
             });
