@@ -86,7 +86,7 @@ def main():
             print('Modules installed, listed alphabetically:')
 
             for name, ver, short_desc in modules:
-                print(f'* {name} {ver}: {short_desc}')
+                print(f'* {name} v{ver}: {short_desc}')
         else:
             print('No modules are installed.')
 
