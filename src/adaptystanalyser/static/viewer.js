@@ -1237,7 +1237,7 @@ function loadCurrentSession() {
                 for (let i = 0; i < non_zero_exit_codes.length; i++) {
                     entity_cnt_hover += non_zero_exit_codes[i][0] + ': exit code ' +
                         non_zero_exit_codes[i][1] +
-                        (non_zero_exit_codes[i][1] === 255 ? ' (may suggest a fatal error, ' +
+                        (non_zero_exit_codes[i][1] === 210 ? ' (may suggest a fatal error, ' +
                          'e.g. a seg fault)' : '') +
                         (i < non_zero_exit_codes.length - 1 ? '\n' : '');
                 }
