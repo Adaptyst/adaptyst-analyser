@@ -22,8 +22,8 @@ class Session {
      *  analysis session.
      *
      *  @constructor
-     *  @param {string} id ID of a session as known by the server.
-     *  @param {string} label Human-readable label of a session.
+     *  @param {String} id ID of a session as known by the server.
+     *  @param {String} label Human-readable label of a session.
      */
     constructor(id, label) {
         this.id = id;
@@ -42,9 +42,9 @@ class Session {
      *  you don't have an eligible Window-inheriting object and
      *  don't want to create one.
      *
-     *  @param {string} entity ID of an entity.
-     *  @param {string} node ID of a node.
-     *  @param {string} module Name of a module.
+     *  @param {String} entity ID of an entity.
+     *  @param {String} node ID of a node.
+     *  @param {String} module Name of a module.
      *  @param {Object} data Data to be sent in form of JSON.
      *  @param done_func Function to be called when the request
      *  succeeds. The function must take exactly one argument
@@ -54,7 +54,7 @@ class Session {
      *  arguments described in the "error" entry of "settings"
      *  in the jQuery.ajax() documentation
      *  [here](https://api.jquery.com/jQuery.ajax).
-     *  @param {string} content_type Content type expected from
+     *  @param {String} content_type Content type expected from
      *  the server side. Use one of the values explained in
      *  the "dataType" entry in "settings" in the jQuery.ajax
      *  documentation [here](https://api.jquery.com/jQuery.ajax).
@@ -139,7 +139,7 @@ class Window {
      *  value returned by this method for constructing
      *  URLs to the dependencies.
      *
-     *  @return {string} Path to the folder with JavaScript
+     *  @return {String} Path to the folder with JavaScript
      *                   and CSS module dependencies.
      *
      *  @static
@@ -188,13 +188,13 @@ class Window {
      *  @param {Object} [session] `Session` object corresponding
      *  to a window. This is provided by a parameter of
      *  `createRootWindow()`. It can be undefined.
-     *  @param {string} [entity_id] The ID of an entity corresponding
+     *  @param {String} [entity_id] The ID of an entity corresponding
      *  to a window. This is provided by a parameter of
      *  `createRootWindow()`. It can be undefined.
-     *  @param {string} [node_id] The ID of a node corresponding
+     *  @param {String} [node_id] The ID of a node corresponding
      *  to a window. This is provided by a parameter of
      *  `createRootWindow()`. It can be undefined.
-     *  @param {string} [module_name] The name of a module within
+     *  @param {String} [module_name] The name of a module within
      *  a node corresponding to a window. It can be undefined.
      *  @param [data] Arbitrary data to be passed to `_setup()`.
      *  It can be undefined.
@@ -277,7 +277,7 @@ class Window {
      *  arguments described in the "error" entry of "settings"
      *  in the jQuery.ajax() documentation
      *  [here](https://api.jquery.com/jQuery.ajax).
-     *  @param {string} content_type Content type expected from
+     *  @param {String} content_type Content type expected from
      *  the server side. Use one of the values explained in
      *  the "dataType" entry in "settings" in the jQuery.ajax
      *  documentation [here](https://api.jquery.com/jQuery.ajax).
@@ -305,7 +305,7 @@ class Window {
     /**
      *  Gets the ID of a window.
      *
-     *  @return {string} ID of a window.
+     *  @return {String} ID of a window.
      */
     getId() {
         return this.#id;
@@ -315,7 +315,7 @@ class Window {
      *  Gets the entity ID of a window. It can be
      *  undefined.
      *
-     *  @return {string} Entity ID of a window.
+     *  @return {String} Entity ID of a window.
      */
     getEntityId() {
         return this.#entity_id;
@@ -325,7 +325,7 @@ class Window {
      *  Gets the node ID of a window. It can be
      *  undefined.
      *
-     *  @return {string} Node ID of a window.
+     *  @return {String} Node ID of a window.
      */
     getNodeId() {
         return this.#node_id;
@@ -335,7 +335,7 @@ class Window {
      *  Gets the module name of a window. It can be
      *  undefined.
      *
-     *  @return {string} Module name of a window.
+     *  @return {String} Module name of a window.
      */
     getModuleName() {
         return this.#module_name;
@@ -367,7 +367,7 @@ class Window {
      *  the window content (i.e. `<type>_content`).
      *
      *  @abstract
-     *  @return {string} Type of a window.
+     *  @return {String} Type of a window.
      */
     getType() {
         throw new Error('This is an abstract method!');
@@ -415,7 +415,7 @@ class Window {
      *  all windows in Adaptyst Analyser.
      *
      *  @abstract
-     *  @return {string} HTML code of the content of a window.
+     *  @return {String} HTML code of the content of a window.
      */
     getContentCode() {
         throw new Error('This is an abstract method!');
@@ -531,10 +531,10 @@ class Window {
     /**
      *  Downloads a given SVG object in a window as an SVG file.
      *
-     *  @param {string} [class_name] The class name of an SVG object.
+     *  @param {String} [class_name] The class name of an SVG object.
      *  It is expected that the object has a unique class name within
      *  the window. Otherwise, the behaviour is undefined.
-     *  @param {string} [css] The path to a CSS stylesheet to be
+     *  @param {String} [css] The path to a CSS stylesheet to be
      *  applied to the SVG before downloading.
      */
     downloadSvg(class_name, css) {
@@ -783,7 +783,7 @@ class Window {
      *  Gets the title of a window.
 
      *  @abstract
-     *  @return {string} Title of a window.
+     *  @return {String} Title of a window.
      */
     getTitle() {
         throw new Error('This is an abstract method!');
