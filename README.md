@@ -1,6 +1,5 @@
 <!--
 SPDX-FileCopyrightText: 2025 CERN
-
 SPDX-License-Identifier: CC-BY-4.0
 -->
 
@@ -20,7 +19,7 @@ Copyright (C) CERN.
 
 The project is generally distributed under the GNU GPL v3 (or later version) license, with a few exceptions. See the individual files for their licensing information.
 
-**A new modular version of Adaptyst Analyser is coming soon! It will have a different (still open-source and GPL-based) licensing arrangement than the current one.**
+If you develop a module for Adaptyst Analyser and don't want it to be licensed under GNU GPL (e.g. because you want it to be closed-source), [contact us first](https://adaptyst.web.cern.ch/contact).
 
 ## Installation and documentation
 The installation instructions can be found at the Adaptyst website [here](https://adaptyst.web.cern.ch/install#adaptyst-analyser). Similarly, the user documentation can be found [here](https://adaptyst.web.cern.ch/docs/intro/welcome).

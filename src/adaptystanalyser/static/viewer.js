@@ -1,8 +1,5 @@
 // SPDX-FileCopyrightText: 2025 CERN
-//
 // SPDX-License-Identifier: GPL-3.0-or-later
-
-// Adaptyst Analyser: a tool for analysing performance analysis results
 
 /**
  *  This class represents a performance analysis session.
@@ -377,9 +374,9 @@ class Window {
     #getProcessedContentObject() {
         let content = $(this.getContentCode());
 
-        // SVGs below are from Google Material Icons, originally licensed under
-        // Apache License 2.0: https://www.apache.org/licenses/LICENSE-2.0.txt
-        // (covered by GNU GPL v3 here)
+        // SVGs below are from Google Material Icons, licensing:
+        // SPDX-FileCopyrightText: Google
+        // SPDX-License-Identifier: Apache-2.0
 
         // ************************
         let setUpIcon = (target, code) => {
@@ -441,26 +438,26 @@ class Window {
         const window_header = `
 <div class="window_header">
   <span class="window_title"></span>
-  <!-- This SVG is from Google Material Icons, originally licensed under
-       Apache License 2.0: https://www.apache.org/licenses/LICENSE-2.0.txt
-       (covered by GNU GPL v3 here) -->
+  <!-- This SVG is from Google Material Icons, licensing:
+       SPDX-FileCopyrightText: Google
+       SPDX-License-Identifier: Apache-2.0 -->
   <svg xmlns="http://www.w3.org/2000/svg" class="window_refresh" height="24px"
        viewBox="0 -960 960 960" width="24px" onmousedown="Window.stopPropagation(event)">
     <title>Reset window contents</title>
     <path d="M480-160q-134 0-227-93t-93-227q0-134 93-227t227-93q69 0 132 28.5T720-690v-110h80v280H520v-80h168q-32-56-87.5-88T480-720q-100 0-170 70t-70 170q0 100
              70 170t170 70q77 0 139-44t87-116h84q-28 106-114 173t-196 67Z"/>
   </svg>
-  <!-- This SVG is from Google Material Icons, originally licensed under
-       Apache License 2.0: https://www.apache.org/licenses/LICENSE-2.0.txt
-       (covered by GNU GPL v3 here) -->
+  <!-- This SVG is from Google Material Icons, licensing:
+       SPDX-FileCopyrightText: Google
+       SPDX-License-Identifier: Apache-2.0 -->
   <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960"
        width="24px" class="window_edit_title" onmousedown="Window.stopPropagation(event)">
     <title>Edit title</title>
     <path d="M160-400v-80h280v80H160Zm0-160v-80h440v80H160Zm0-160v-80h440v80H160Zm360 560v-123l221-220q9-9 20-13t22-4q12 0 23 4.5t20 13.5l37 37q8 9 12.5 20t4.5 22q0 11-4 22.5T863-380L643-160H520Zm300-263-37-37 37 37ZM580-220h38l121-122-18-19-19-18-122 121v38Zm141-141-19-18 37 37-18-19Z"/>
   </svg>
-  <!-- This SVG is from Google Material Icons, originally licensed under
-       Apache License 2.0: https://www.apache.org/licenses/LICENSE-2.0.txt
-       (covered by GNU GPL v3 here) -->
+  <!-- This SVG is from Google Material Icons, licensing:
+       SPDX-FileCopyrightText: Google
+       SPDX-License-Identifier: Apache-2.0 -->
   <svg xmlns="http://www.w3.org/2000/svg" class="window_visibility" height="24px"
        viewBox="0 -960 960 960" width="24px" onmousedown="Window.stopPropagation(event)">
     <title>Toggle visibility</title>
@@ -468,9 +465,9 @@ class Window {
              31.5-76.5T480-608q45 0 76.5 31.5T588-500q0 45-31.5 76.5T480-392Zm0 192q-146 0-266-81.5T40-500q54-137 174-218.5T480-800q146 0 266 81.5T920-500q-54
              137-174 218.5T480-200Zm0-300Zm0 220q113 0 207.5-59.5T832-500q-50-101-144.5-160.5T480-720q-113 0-207.5 59.5T128-500q50 101 144.5 160.5T480-280Z"/>
   </svg>
-  <!-- This SVG is from Google Material Icons, originally licensed under
-       Apache License 2.0: https://www.apache.org/licenses/LICENSE-2.0.txt
-       (covered by GNU GPL v3 here) -->
+  <!-- This SVG is from Google Material Icons, licensing:
+       SPDX-FileCopyrightText: Google
+       SPDX-License-Identifier: Apache-2.0 -->
   <svg xmlns="http://www.w3.org/2000/svg" class="window_close" height="24px"
        viewBox="0 -960 960 960" width="24px" onmousedown="Window.stopPropagation(event)">
     <title>Close</title>
