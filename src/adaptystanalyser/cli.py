@@ -391,6 +391,7 @@ def main():
             print('No modules installed')
 
         js_dependencies = {
+            'jquery.min.js': 'https://code.jquery.com/jquery-3.7.1.min.js',
             'sigma.min.js': 'https://cdnjs.cloudflare.com/ajax/libs' +
             '/sigma.js/3.0.2/sigma.min.js',
             'graphology.umd.min.js': 'https://cdnjs.cloudflare.com/ajax/libs' +

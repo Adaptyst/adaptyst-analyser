@@ -24,8 +24,10 @@ if 'PERFORMANCE_ANALYSIS_STORAGE' not in app.config:
 
 
 static_path = Path(app.root_path) / 'static'
-scripts = list(sorted(map(lambda x: x.name,
-                          static_path.glob('*.js')))) + \
+scripts = ['jquery.min.js'] + \
+    list(sorted(filter(lambda x: x != 'jquery.min.js',
+                       map(lambda x: x.name,
+                           static_path.glob('*.js'))))) + \
     list(sorted(map(lambda x: 'deps/' + x.name,
                     static_path.glob('deps/*.js')))) + \
     list(sorted(map(lambda x: 'deps/' + x.name,
