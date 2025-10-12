@@ -28,18 +28,15 @@ The installation instructions can be found at the Adaptyst website [here](https:
 ## Third-party libraries used
 Python:
 * [Jinja](https://jinja.palletsprojects.com/en/stable)
-* [treelib](https://github.com/caesar0301/treelib)
 * [Flask](https://flask.palletsprojects.com)
 * [Gunicorn](https://gunicorn.org)
 * [pytest](https://docs.pytest.org/en/stable)
 * [pytest-mock](https://github.com/pytest-dev/pytest-mock)
 
 JavaScript:
-* [d3-flame-graph](https://github.com/Adaptyst/d3-flame-graph) (patched and stored in the Adaptyst org)
-* [highlight.js](https://highlightjs.org)
-* [highlightjs-line-numbers.js](https://github.com/wcoder/highlightjs-line-numbers.js)
-* [function-plot](https://mauriciopoppe.github.io/function-plot)
-* [vis-timeline](https://github.com/visjs/vis-timeline)
+* [jQuery](https://jquery.com)
+* [sigma.js](https://www.sigmajs.org)
+* [graphology](https://graphology.github.io)
 
 ## Acknowledgements
 The Adaptyst Analyser development is possible thanks to the following funding sources:
