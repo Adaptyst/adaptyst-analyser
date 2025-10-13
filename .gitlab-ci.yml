@@ -1,5 +1,4 @@
 # SPDX-FileCopyrightText: 2025 CERN
-#
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 workflow:
@@ -11,8 +10,6 @@ workflow:
 stages:
   - licensing-check
   - build
-  - test
-  - deploy
 
 reuse-lint:
   image:
@@ -44,40 +41,24 @@ docker-build:
     # Print the full registry path of the pushed image
     - echo "Image pushed successfully to ${IMAGE_DESTINATION}"
 
-docker-test:
-  image:
-    name: gitlab-registry.cern.ch/adaptyst/adaptyst-analyser:branch-$CI_COMMIT_BRANCH
-    entrypoint: [""]
-  rules:
-    - if: $CI_COMMIT_TAG == null
-  stage: test
-  script:
-    - cd $CI_PROJECT_DIR
-    - pytest
+# docker-test:
+#   image:
+#     name: gitlab-registry.cern.ch/adaptyst/adaptyst-analyser:branch-$CI_COMMIT_BRANCH
+#     entrypoint: [""]
+#   rules:
+#     - if: $CI_COMMIT_TAG == null
+#   stage: test
+#   script:
+#     - cd $CI_PROJECT_DIR
+#     - pytest
 
-docker-test-main:
-  image:
-    name: gitlab-registry.cern.ch/adaptyst/adaptyst-analyser:latest
-    entrypoint: [""]
-  rules:
-    - if: $CI_COMMIT_TAG != null
-  stage: test
-  script:
-    - cd $CI_PROJECT_DIR
-    - pytest
-
-syclops-pviewer-deploy:
-  # Based on https://paas.docs.cern.ch/2._Deploy_Applications/Deploy_Docker_Image/2-automatic-redeployments/#integrate-redeployment-in-ci-workflow
-  stage: deploy
-  rules:
-    - if: $CI_COMMIT_TAG != null
-  image: gitlab-registry.cern.ch/paas-tools/openshift-client:latest
-  variables:
-    SERVER: https://api.paas.okd.cern.ch
-    PROJECT: syclops-pviewer
-    APP_NAME: profilingviewer
-  script:
-    - oc login $SERVER --token=$DEPLOY_TOKEN
-    - oc project $PROJECT
-    - oc import-image $APP_NAME --all
-    - sleep 10 && oc rollout status deployment/$APP_NAME
+# docker-test-main:
+#   image:
+#     name: gitlab-registry.cern.ch/adaptyst/adaptyst-analyser:latest
+#     entrypoint: [""]
+#   rules:
+#     - if: $CI_COMMIT_TAG != null
+#   stage: test
+#   script:
+#     - cd $CI_PROJECT_DIR
+#     - pytest

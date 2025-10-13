@@ -1,0 +1,312 @@
+/*
+SPDX-FileCopyrightText: 2025 CERN
+SPDX-License-Identifier: GPL-3.0-or-later
+*/
+
+html {
+    font-family:Arial;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    height:100%;
+    overflow:visible;
+}
+
+#block {
+    flex-grow:1;
+    position:relative;
+}
+
+#main {
+    height:90vh;
+    width:90vw;
+    max-height:90vh;
+    max-width:90vw;
+    padding-left:10px;
+    padding-right:10px;
+    padding-top:0;
+    padding-bottom:0;
+    background-color:white;
+    display:flex;
+    flex-direction:column;
+    box-shadow:3px 3px 10px;
+    border-style:solid;
+    border-color:black;
+    border-width:2px;
+}
+
+.scrollable {
+    overflow-y:auto;
+}
+
+object {
+    max-width:100%;
+}
+
+#header {
+    margin-bottom:20px;
+    border-bottom-style:double;
+    border-bottom-color:gray;
+    border-bottom-width:3px;
+    padding:10px;
+}
+
+#results_combobox {
+    font-size:18px;
+    width:auto;
+    min-width:400px;
+    margin-right:5px;
+}
+
+#result_background {
+    display:none;
+    position:fixed;
+    top: 0;
+    left: 0;
+    width:100%;
+    height:100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index:1000;
+}
+
+.menu_block {
+    position:fixed;
+    background-color:white;
+    display:none;
+    flex-direction:column;
+    max-width:50vw;
+    box-shadow:3px 3px 10px;
+    overflow-y:auto;
+}
+
+.setting_item {
+    display:flex;
+    align-items:center;
+}
+
+.setting_label_left {
+    margin-right:5px;
+}
+
+.setting_label_right {
+    margin-left:5px;
+}
+
+.menu_item, .menu_item_disabled {
+    border-top-color:black;
+    border-top-width:1px;
+    border-top-style:solid;
+    padding:5px;
+    cursor:default;
+}
+
+.menu_item_first {
+    padding:5px;
+    cursor:default;
+}
+
+.menu_item_disabled {
+    color:gray;
+}
+
+.menu_item_with_hover:hover {
+    background-color:#DDDDDD;
+}
+
+.flame_graphs_content {
+    overflow:hidden;
+    display:flex;
+    flex-direction:column;
+}
+
+.flamegraph_choice {
+    display:flex;
+    flex-direction:row;
+    width:100%;
+    margin-bottom:10px;
+}
+
+.flamegraph_remainder {
+    flex-grow:1;
+    display:flex;
+    align-items:center;
+    margin-right:5px;
+}
+
+.pointer {
+    cursor:pointer;
+}
+
+#refresh_needed {
+    display:none;
+}
+
+#analysis {
+    min-width:200px;
+    margin-right:10px;
+}
+
+.window {
+    position:absolute;
+    display:flex;
+    flex-direction:column;
+    border-style:solid;
+    border-color:black;
+    border-width:2px;
+    overflow:hidden;
+    resize:both;
+    box-shadow:3px 3px 10px;
+    max-height:95%;
+    max-width:95%;
+    min-width:250px;
+    min-height:50px;
+}
+
+.window_header {
+    display:flex;
+    align-items:center;
+    background-color:black;
+    color:white;
+    fill:white;
+    padding:5px;
+    cursor:grab;
+}
+
+.window_content {
+    overflow:hidden;
+    background-color:white;
+    flex-grow:1;
+    padding:5px;
+    display:flex;
+    flex-direction:column;
+    position:relative;
+}
+
+.vis-group-level-unknown-but-gte1 {
+    border:0;
+}
+
+.vis-label.vis-nested-group.vis-group-level-unknown-but-gte1 {
+    background-color:white;
+}
+
+.vis-ltr .vis-label.vis-nested-group .vis-inner {
+    padding-left:0;
+}
+
+.narrow_margin {
+    margin-top:0;
+    margin-bottom:10px;
+}
+
+.window_title {
+    flex-grow:1;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+}
+
+.window_refresh, .window_visibility, .window_edit_title, .window_close {
+    cursor:initial;
+    margin-left:5px;
+    min-width:24px;
+}
+
+#result_close {
+    position:absolute;
+    right:5px;
+    top:5px;
+}
+
+#settings_block {
+    display:none;
+    position:fixed;
+    background-color:white;
+    max-width:50vw;
+    box-shadow:3px 3px 10px;
+    overflow-y:auto;
+    padding:10px;
+}
+
+.margin_bottom {
+    margin-bottom:10px;
+}
+
+#loading {
+    display:none;
+    margin-right:10px;
+}
+
+.loading {
+    display:flex;
+    align-items:center;
+    position:absolute;
+    width:100%;
+    height:100%;
+    z-index:10000;
+    background-color:white;
+}
+
+.loading_image {
+    flex-grow:1;
+}
+
+.disabled {
+    fill:rgba(0, 0, 0, 0.5);
+    cursor:not-allowed;
+}
+
+#main_header {
+    display:flex;
+    align-items:center;
+}
+
+#header_left h1 {
+    margin:0;
+}
+
+#header_left {
+    flex-grow:1;
+}
+
+#header_right {
+    text-align:right;
+    display:flex;
+    align-items:center;
+}
+
+#footer {
+    border-top-style:double;
+    border-top-color:gray;
+    border-top-width:3px;
+    padding:10px;
+    font-size:18px;
+    display:flex;
+    align-items:center;
+    margin-top:20px;
+    line-height:1.25em;
+    min-height:2.5em;
+}
+
+.settings_backends_combobox {
+    flex-grow:1;
+}
+
+.centered {
+    text-align:center;
+}
+
+.toolbar {
+    display:flex;
+    align-items:center;
+    border-bottom-style:double;
+    border-botoom-color:gray;
+    border-bottom-width:3px;
+    padding-bottom:5px;
+}
+
+.window_space {
+    flex-grow:1;
+    padding:10px;
+    overflow:auto;
+}

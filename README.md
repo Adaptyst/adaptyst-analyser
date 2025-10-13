@@ -1,6 +1,5 @@
 <!--
 SPDX-FileCopyrightText: 2025 CERN
-
 SPDX-License-Identifier: CC-BY-4.0
 -->
 
@@ -11,7 +10,7 @@ SPDX-License-Identifier: CC-BY-4.0
 A tool for analysing performance analysis results returned e.g. by Adaptyst.
 
 ## Disclaimer
-This is currently a dev version and the tool is under active development. The tests are limited at the moment and bugs are to be expected. Use at your own risk!
+This is currently a dev version and the tool is under active development. Bugs are to be expected. Use at your own risk!
 
 All feedback is welcome.
 
@@ -20,7 +19,7 @@ Copyright (C) CERN.
 
 The project is generally distributed under the GNU GPL v3 (or later version) license, with a few exceptions. See the individual files for their licensing information.
 
-**A new modular version of Adaptyst Analyser is coming soon! It will have a different (still open-source and GPL-based) licensing arrangement than the current one.**
+If you develop a module for Adaptyst Analyser and don't want it to be licensed under GNU GPL (e.g. because you want it to be closed-source), [contact us first](https://adaptyst.web.cern.ch/contact).
 
 ## Installation and documentation
 The installation instructions can be found at the Adaptyst website [here](https://adaptyst.web.cern.ch/install#adaptyst-analyser). Similarly, the user documentation can be found [here](https://adaptyst.web.cern.ch/docs/intro/welcome).
@@ -28,18 +27,15 @@ The installation instructions can be found at the Adaptyst website [here](https:
 ## Third-party libraries used
 Python:
 * [Jinja](https://jinja.palletsprojects.com/en/stable)
-* [treelib](https://github.com/caesar0301/treelib)
 * [Flask](https://flask.palletsprojects.com)
 * [Gunicorn](https://gunicorn.org)
 * [pytest](https://docs.pytest.org/en/stable)
 * [pytest-mock](https://github.com/pytest-dev/pytest-mock)
 
 JavaScript:
-* [d3-flame-graph](https://github.com/Adaptyst/d3-flame-graph) (patched and stored in the Adaptyst org)
-* [highlight.js](https://highlightjs.org)
-* [highlightjs-line-numbers.js](https://github.com/wcoder/highlightjs-line-numbers.js)
-* [function-plot](https://mauriciopoppe.github.io/function-plot)
-* [vis-timeline](https://github.com/visjs/vis-timeline)
+* [jQuery](https://jquery.com)
+* [sigma.js](https://www.sigmajs.org)
+* [graphology](https://graphology.github.io)
 
 ## Acknowledgements
 The Adaptyst Analyser development is possible thanks to the following funding sources:

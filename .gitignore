@@ -310,3 +310,10 @@ poetry.toml
 pyrightconfig.json
 
 # End of https://www.toptal.com/developers/gitignore/api/python,flask,emacs
+
+### Adaptyst Analyser ###
+src/adaptystanalyser/modules
+src/adaptystanalyser/static/modules
+src/adaptystanalyser/static/*.js
+src/adaptystanalyser/static/*.css
+src/adaptystanalyser/static/deps
