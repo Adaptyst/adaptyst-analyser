@@ -3,13 +3,14 @@
 
 FROM python:latest
 
-RUN apt-get update && apt-get dist-upgrade -y && apt-get install -y nodejs npm
+RUN apt-get update && apt-get dist-upgrade -y
 
 WORKDIR /app
 RUN mkdir adaptyst-analyser
 COPY . adaptyst-analyser/
 RUN pip install adaptyst-analyser/ && rm -rf adaptyst-analyser
 RUN chgrp -R 0 /app && chmod -R g+rwX /app
+RUN adaptyst-analyser --force-install
 
 EXPOSE 8000
-ENTRYPOINT ["gunicorn", "-b", "0.0.0.0:8000", "adaptystanalyser.app:app"]
+ENTRYPOINT ["adaptyst-analyser", "-a", "0.0.0.0:8000"]
