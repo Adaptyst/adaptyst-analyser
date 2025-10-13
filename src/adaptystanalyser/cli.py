@@ -46,9 +46,9 @@ def main():
                         default='', help='custom background CSS of the '
                         'website (syntax is the same as in "background" in '
                         'CSS, do not use semicolons)')
-    parser.add_argument('--force-reinstall', dest='reinstall_js_deps',
-                        action='store_true', help='reinstall all core JavaScript '
-                        'dependencies even if they are already installed')
+    parser.add_argument('--force-install', dest='reinstall_js_deps',
+                        action='store_true', help='(re)install all core JavaScript '
+                        'dependencies even if they are already set up')
     parser.add_argument('-u', dest='update', action='store_true',
                         help='update/reinstall the module if it is already '
                         'installed')
@@ -60,6 +60,15 @@ def main():
                         'modules')
 
     args = parser.parse_args()
+
+    static_path = Path(__file__).parent / 'static'
+    js_dependencies = {
+        'jquery.min.js': 'https://code.jquery.com/jquery-3.7.1.min.js',
+        'sigma.min.js': 'https://cdnjs.cloudflare.com/ajax/libs' +
+        '/sigma.js/3.0.2/sigma.min.js',
+        'graphology.umd.min.js': 'https://cdnjs.cloudflare.com/ajax/libs' +
+        '/graphology/0.26.0/graphology.umd.min.js'
+    }
 
     if args.list:
         modules_path = Path(__file__).parent / 'modules'
@@ -87,6 +96,17 @@ def main():
                 print(f'* {name} v{ver}: {short_desc}')
         else:
             print('No modules are installed.')
+
+        return 0
+
+    if args.reinstall_js_deps and args.results is None:
+        for name, url in js_dependencies.items():
+            print(f'Downloading {name} from {url}...',
+                  file=sys.stderr)
+
+            with urllib.request.urlopen(url) as data:
+                with (static_path / name).open(mode='wb') as f:
+                    shutil.copyfileobj(data, f)
 
         return 0
 
@@ -387,16 +407,6 @@ def main():
                 print('No modules installed')
         else:
             print('No modules installed')
-
-        js_dependencies = {
-            'jquery.min.js': 'https://code.jquery.com/jquery-3.7.1.min.js',
-            'sigma.min.js': 'https://cdnjs.cloudflare.com/ajax/libs' +
-            '/sigma.js/3.0.2/sigma.min.js',
-            'graphology.umd.min.js': 'https://cdnjs.cloudflare.com/ajax/libs' +
-            '/graphology/0.26.0/graphology.umd.min.js'
-        }
-
-        static_path = Path(__file__).parent / 'static'
 
         for name, url in js_dependencies.items():
             if args.reinstall_js_deps or not (static_path / name).exists():
