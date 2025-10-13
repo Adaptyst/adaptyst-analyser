@@ -86,12 +86,12 @@ def post(identifier, entity, node, module):
 
 @app.route('/')
 def main():
-    if len(app.config.get('CUSTOM_TITLE')) > 0:
+    if 'CUSTOM_TITLE' in app.config and len(app.config.get('CUSTOM_TITLE')) > 0:
         title = 'Adaptyst Analyser (' + app.config.get('CUSTOM_TITLE') + ')'
     else:
         title = 'Adaptyst Analyser'
 
-    if len(app.config.get('BACKGROUND_CSS')) > 0:
+    if 'BACKGROUND_CSS' in app.config and len(app.config.get('BACKGROUND_CSS')) > 0:
         background = app.config.get('BACKGROUND_CSS')
     else:
         background = 'gray'
