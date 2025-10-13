@@ -1,3 +1,8 @@
+<!--
+SPDX-FileCopyrightText: 2025 CERN
+SPDX-License-Identifier: CC-BY-4.0
+-->
+
 ## Welcome to the Adaptyst Analyser JavaScript documentation!
 
 The main purpose of this website is explaining how you can make windows
