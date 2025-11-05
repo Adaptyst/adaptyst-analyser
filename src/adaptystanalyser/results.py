@@ -254,16 +254,17 @@ class PerformanceAnalysisResults:
                 'options': {
                     'allowSelfLoops': False,
                     'multi': False,
-                    'type': 'mixed'
+                    'type': 'directed'
                 },
                 'nodes': [
                     {
-                        'key': k,
+                        'key': f'{entity}_{k}',
                         'attributes': {
-                            'x': 0,
-                            'y': 0,
-                            'label': k,
-                            'size': 50,
+                            'x': random.random(),
+                            'y': random.random(),
+                            'label': f'[{entity}] {k}',
+                            'server_id': k,
+                            'size': 40,
                             'color': entities[html.escape(entity)][1],
                             'entity': entity,
                             'backends': [[x['name'],
@@ -273,6 +274,32 @@ class PerformanceAnalysisResults:
                     }
                     for entity in self._system['entities'].keys()
                     for k, v in self._system['entities'][entity]['nodes'].items()
+                ],
+                'edges': [
+                    {
+                        'key': f'{entity}_{k}',
+                        'source': f'{entity}_{v["from"]}',
+                        'target': f'{entity}_{v["to"]}',
+                        'undirected': False,
+                        'attributes': {
+                            'label': k,
+                            'size': 10
+                        }
+                    }
+                    for entity in self._system['entities'].keys()
+                    for k, v in self._system['entities'][entity]['edges'].items()
+                ] + [
+                    {
+                        'key': k,
+                        'source': f'{v["from"]["entity"]}_{v["from"]["node"]}',
+                        'target': f'{v["to"]["entity"]}_{v["to"]["node"]}',
+                        'undirected': False,
+                        'attributes': {
+                            'label': k,
+                            'size': 10
+                        }
+                    }
+                    for k, v in self._system.get('edges', {}).items()
                 ]
             }
         })
