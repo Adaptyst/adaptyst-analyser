@@ -1152,9 +1152,26 @@ function loadCurrentSession() {
         }).done(ajax_obj => {
             let response = JSON.parse(ajax_obj);
             let graph = graphology.Graph.from(response.system);
-            let view = new Sigma(graph, $('#block')[0], {
-
+            let positions = forceAtlas2(graph, {
+                iterations: 50,
+                settings: {
+                    adjustSizes: true,
+                    gravity: 100
+                }
             });
+            for (let node of Object.keys(positions)) {
+                graph.mergeNodeAttributes(node, positions[node]);
+            }
+            let view = new Sigma(graph, $('#block')[0], {
+                renderEdgeLabels: true,
+                defaultEdgeType: 'curve',
+                edgeProgramClasses: {
+                    curve: SigmaEdgeCurve.EdgeCurvedArrowProgram
+                },
+                labelSize: 20,
+                edgeLabelSize: 20
+            });
+            view.getCamera().setState({ratio: 2});
             view.on('doubleClickNode', (node) => {
                 node.event.preventSigmaDefault();
                 let backends = graph.getNodeAttribute(node.node, 'backends');
@@ -1172,7 +1189,7 @@ function loadCurrentSession() {
                                   [{
                                       backend_name: name,
                                       entity: entity,
-                                      node: node.node,
+                                      node: graph.getNodeAttribute(node.node, 'server_id'),
                                       session: session
                                   }, (event) => {
                                       if (version.length > 0 && (name in min_mod_vers) &&

@@ -64,10 +64,15 @@ def main():
     static_path = Path(__file__).parent / 'static'
     js_dependencies = {
         'jquery.min.js': 'https://code.jquery.com/jquery-3.7.1.min.js',
-        'sigma.min.js': 'https://cdnjs.cloudflare.com/ajax/libs' +
+        'sigma-base.min.js': 'https://cdnjs.cloudflare.com/ajax/libs'
         '/sigma.js/3.0.2/sigma.min.js',
-        'graphology.umd.min.js': 'https://cdnjs.cloudflare.com/ajax/libs' +
-        '/graphology/0.26.0/graphology.umd.min.js'
+        'sigma-edge-curve.js': 'https://cernbox.cern.ch/remote.php/dav'
+        '/public-files/GN8XhQhKJAfG1yH/sigma-edge-curve.js',
+        'graphology.umd.min.js': 'https://cdnjs.cloudflare.com/ajax/libs'
+        '/graphology/0.26.0/graphology.umd.min.js',
+        'graphology-layout-forceatlas2.js': 'https://cernbox.cern.ch/'
+        'remote.php/dav/public-files/U9mKr25SUKQfEsl'
+        '/graphology-layout-forceatlas2.js'
     }
 
     if args.list:
