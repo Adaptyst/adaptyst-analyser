@@ -287,7 +287,7 @@ class PerformanceAnalysisResults:
                         }
                     }
                     for entity in self._system['entities'].keys()
-                    for k, v in self._system['entities'][entity]['edges'].items()
+                    for k, v in self._system['entities'][entity].get('edges', {}).items()
                 ] + [
                     {
                         'key': k,
