@@ -30,8 +30,7 @@ scripts = ['jquery.min.js'] + \
                     static_path.glob('deps/*.js')))) + \
     list(sorted(map(lambda x: 'deps/' + x.name,
                     static_path.glob('deps/*.cjs'))))
-stylesheets = list(sorted(map(lambda x: x.name,
-                              static_path.glob('*.css')))) + \
+stylesheets = ['viewer_common.css'] + \
     list(sorted(map(lambda x: 'modules/' + x.parent.name + '/settings.css',
                     static_path.glob('modules/*/settings.css')))) + \
     list(sorted(map(lambda x: 'deps/' + x.name,
@@ -84,7 +83,7 @@ def post(identifier, entity, node, module):
         return '', 500
 
 
-@app.route('/')
+@app.get('/')
 def main():
     if 'CUSTOM_TITLE' in app.config and len(app.config.get('CUSTOM_TITLE')) > 0:
         title = 'Adaptyst Analyser (' + app.config.get('CUSTOM_TITLE') + ')'
@@ -96,14 +95,30 @@ def main():
     else:
         background = 'gray'
 
+    ids = PerformanceAnalysisResults.get_all_folders(
+        app.config['PERFORMANCE_ANALYSIS_STORAGE'])
+
+    session = request.values.get('session', None)
+
+    if session is not None and \
+       session not in map(lambda x: x.value, ids):
+        session = None
+
+    if request.values.get('compact', False) and \
+       session is None:
+        code = 400
+    else:
+        code = 200
+
     return render_template(
         'viewer.html',
-        ids=PerformanceAnalysisResults.get_all_folders(
-            app.config['PERFORMANCE_ANALYSIS_STORAGE']),
+        ids=ids,
         scripts=scripts,
         stylesheets=stylesheets,
         version='v' + version('adaptyst-analyser'),
         title=title,
         background=background,
         backends=backends,
-        min_mod_vers=json.dumps(min_mod_vers))
+        min_mod_vers=json.dumps(min_mod_vers),
+        compact=request.values.get('compact', False),
+        session=session), code

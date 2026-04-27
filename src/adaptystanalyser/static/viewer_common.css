@@ -17,11 +17,14 @@ html {
     position:relative;
 }
 
+#home {
+    all:unset;
+    cursor:pointer;
+    width:32px;
+    height:32px;
+}
+
 #main {
-    height:90vh;
-    width:90vw;
-    max-height:90vh;
-    max-width:90vw;
     padding-left:10px;
     padding-right:10px;
     padding-top:0;
@@ -29,10 +32,6 @@ html {
     background-color:white;
     display:flex;
     flex-direction:column;
-    box-shadow:3px 3px 10px;
-    border-style:solid;
-    border-color:black;
-    border-width:2px;
 }
 
 .scrollable {
@@ -44,7 +43,6 @@ object {
 }
 
 #header {
-    margin-bottom:20px;
     border-bottom-style:double;
     border-bottom-color:gray;
     border-bottom-width:3px;
@@ -146,32 +144,6 @@ object {
     margin-right:10px;
 }
 
-.window {
-    position:absolute;
-    display:flex;
-    flex-direction:column;
-    border-style:solid;
-    border-color:black;
-    border-width:2px;
-    overflow:hidden;
-    resize:both;
-    box-shadow:3px 3px 10px;
-    max-height:95%;
-    max-width:95%;
-    min-width:250px;
-    min-height:50px;
-}
-
-.window_header {
-    display:flex;
-    align-items:center;
-    background-color:black;
-    color:white;
-    fill:white;
-    padding:5px;
-    cursor:grab;
-}
-
 .window_content {
     overflow:hidden;
     background-color:white;
@@ -208,8 +180,6 @@ object {
 
 .window_refresh, .window_visibility, .window_edit_title, .window_close {
     cursor:initial;
-    margin-left:5px;
-    min-width:24px;
 }
 
 #result_close {
@@ -245,6 +215,8 @@ object {
     height:100%;
     z-index:10000;
     background-color:white;
+    top:0;
+    left:0;
 }
 
 .loading_image {
@@ -280,12 +252,14 @@ object {
     border-top-color:gray;
     border-top-width:3px;
     padding:10px;
-    font-size:18px;
     display:flex;
     align-items:center;
     margin-top:20px;
     line-height:1.25em;
-    min-height:2.5em;
+}
+
+#footer_text {
+    width:100%;
 }
 
 .settings_backends_combobox {
@@ -309,4 +283,9 @@ object {
     flex-grow:1;
     padding:10px;
     overflow:auto;
+}
+
+#graph {
+    width:100%;
+    height:100%;
 }

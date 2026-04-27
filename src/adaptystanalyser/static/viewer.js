@@ -91,6 +91,14 @@ class Window {
      */
     static instances = {};
 
+    /**
+     *  Static variable storing an instance of Sigma for displaying
+     *  a system graph of the current session.
+     *
+     *  @static
+     */
+    static system_graph_view = undefined;
+
     // Private, not meant to be used by any external code.
     static #current_focused_id = undefined;
 
@@ -116,14 +124,16 @@ class Window {
                 continue;
             }
 
-            if (Window.instances[window_id].first_resize_call) {
-                Window.instances[window_id].first_resize_call = false;
+            if (Window.instances[window_id].#first_resize_call) {
+                Window.instances[window_id].#first_resize_call = false;
             } else {
-                let position = $(target).position();
+                if (!Window.isInCompactMode()) {
+                    let position = $(target).position();
 
-                target.style.transform = '';
-                target.style.top = position.top + 'px';
-                target.style.left = position.left + 'px';
+                    target.style.transform = '';
+                    target.style.top = position.top + 'px';
+                    target.style.left = position.left + 'px';
+                }
 
                 Window.instances[window_id].triggerResize();
             }
@@ -156,6 +166,17 @@ class Window {
     static stopPropagation(event) {
         event.stopPropagation();
         event.preventDefault();
+    }
+
+    /**
+     *  Returns whether Adaptyst Analyser is run in compact mode.
+     *
+     *  @return {bool} Whether compact mode is enabled.
+     *
+     *  @static
+     */
+    static isInCompactMode() {
+        return $('body').attr('data-compact') === '1';
     }
 
     #id;
@@ -237,13 +258,15 @@ class Window {
         this.#dom = this.#createWindowDOM();
         this.#custom_title = undefined;
 
-        if (x !== undefined && y !== undefined) {
-            this.#dom.css('left', x + 'px');
-            this.#dom.css('top', y + 'px');
-        } else {
-            this.#dom.css('top', '50%');
-            this.#dom.css('left', '50%');
-            this.#dom.css('transform', 'translate(-50%, -50%)');
+        if (!Window.isInCompactMode()) {
+            if (x !== undefined && y !== undefined) {
+                this.#dom.css('left', x + 'px');
+                this.#dom.css('top', y + 'px');
+            } else {
+                this.#dom.css('top', '50%');
+                this.#dom.css('left', '50%');
+                this.#dom.css('transform', 'translate(-50%, -50%)');
+            }
         }
 
         this.#first_resize_call = true;
@@ -438,12 +461,13 @@ class Window {
         const window_header = `
 <div class="window_header">
   <span class="window_title"></span>
+  <div class="window_buttons">
   <!-- This SVG is from Google Material Icons, licensing:
        SPDX-FileCopyrightText: Google
        SPDX-License-Identifier: Apache-2.0 -->
   <svg xmlns="http://www.w3.org/2000/svg" class="window_refresh" height="24px"
        viewBox="0 -960 960 960" width="24px" onmousedown="Window.stopPropagation(event)">
-    <title>Reset window contents</title>
+    <title>Reset/Refresh contents</title>
     <path d="M480-160q-134 0-227-93t-93-227q0-134 93-227t227-93q69 0 132 28.5T720-690v-110h80v280H520v-80h168q-32-56-87.5-88T480-720q-100 0-170 70t-70 170q0 100
              70 170t170 70q77 0 139-44t87-116h84q-28 106-114 173t-196 67Z"/>
   </svg>
@@ -473,12 +497,17 @@ class Window {
     <title>Close</title>
     <path d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z"/>
   </svg>
+  </div>
 </div>
 `;
 
         let root = $('<div></div>');
         root.attr('class', 'window ' + this.getType() + '_window');
-        root.append($(window_header));
+
+        let header = $(window_header);
+        header.attr('id', this.#id + '_header');
+
+        root.append(header);
 
         let content = $('<div></div>');
         content.attr('class', 'window_content ' + this.getType() + '_content');
@@ -487,9 +516,16 @@ class Window {
         root.append(content);
 
         root.attr('id', this.#id);
-        root.attr('onclick', `Window.instances['${this.#id}'].focus()`);
-        root.attr('onmouseup', `Window.instances['${this.#id}'].onMouseUp()`);
-        root.find('.window_header').attr('onmousedown', `Window.instances['${this.#id}'].startDrag(event)`);
+
+        if (Window.isInCompactMode()) {
+            header.attr('onclick', `Window.instances['${this.#id}'].focus()`);
+            header.attr('onauxclick', `Window.instances['${this.#id}'].onAuxClick(event)`);
+        } else {
+            root.attr('onclick', `Window.instances['${this.#id}'].focus()`);
+            root.attr('onmouseup', `Window.instances['${this.#id}'].onMouseUp()`);
+            root.find('.window_header').attr('onmousedown', `Window.instances['${this.#id}'].startDrag(event)`);
+        }
+
         root.find('.window_refresh').attr(
             'onclick', `Window.instances['${this.#id}'].onRefreshClick(event)`);
         root.find('.window_visibility').attr(
@@ -503,21 +539,40 @@ class Window {
     }
 
     // Private, not meant to be called by any external code.
+    onAuxClick(event) {
+        if (event.button === 1) {
+            this.close(event);
+        }
+    }
+
+    // Private, not meant to be called by any external code.
     onEditTitleClick(event) {
-        let title = window.prompt('Enter a new title for the window. ' +
+        Window.stopPropagation(event);
+
+        let title = undefined;
+
+        if (Window.isInCompactMode()) {
+            title = window.prompt('Enter a new title for the window.',
+                                  this.#custom_title === undefined ?
+                                  $('#' + this.#id + '_header').find('.window_title').text()
+                                  : this.#custom_title);
+        } else {
+            title = window.prompt('Enter a new title for the window. ' +
                                   'The session prefix will remain ' +
                                   'unchanged if present.',
                                   this.#custom_title === undefined ?
                                   this.getTitle() : this.#custom_title);
+        }
 
         if (title == undefined || title === '') {
             return;
         }
 
-        if (this.#session === undefined) {
-            this.#dom.find('.window_title').text(title);
+        if (this.#session === undefined || Window.isInCompactMode()) {
+            $('#' + this.#id + '_header').find('.window_title').text(title);
+            $('#' + this.#id + '_header').attr('title', title);
         } else {
-            this.#dom.find('.window_title').text(
+            $('#' + this.#id + '_header').find('.window_title').text(
                 '[Session: ' + this.#session.label + '] ' +
                     title);
         }
@@ -563,43 +618,64 @@ class Window {
      *  Focuses a window.
      */
     focus() {
-        let window_header = this.#dom.find('.window_header');
+        let window_header = $('#' + this.#id + '_header');
+        let window_buttons = window_header.find('.window_buttons');
 
         if (Window.#current_focused_id !== this.#id) {
-            if (Window.#largest_z_index >= 10000) {
-                let z_index_arr = [];
+            if (Window.isInCompactMode()) {
+                this.#first_resize_call = true;
 
-                for (const w of Object.values(Window.instances)) {
-                    z_index_arr.push({'index': w.getZIndex(),
-                                      'id': w.getId()});
+                $('#footer_text').hide();
+
+                let current_content = $('#block').children();
+                current_content.hide();
+                this.#dom.show();
+
+                if (this.#being_resized) {
+                    this.finishResize();
+                    this.#being_resized = false;
                 }
-
-                z_index_arr.sort((a, b) => {
-                    if (a.index === undefined) {
-                        return -1;
-                    } else if (b.index === undefined) {
-                        return 1;
-                    } else {
-                        return a.index - b.index;
-                    }
-                });
-
-                let index = 1;
-                for (const obj of z_index_arr) {
-                    $('#' + obj.id).css('z-index', index);
-                    index += 1;
-                }
-
-                this.#dom.css('z-index', index);
-                Window.#largest_z_index = index;
             } else {
-                Window.#largest_z_index += 1;
-                this.#dom.css('z-index', Window.#largest_z_index);
+                if (Window.#largest_z_index >= 10000) {
+                    let z_index_arr = [];
+
+                    for (const w of Object.values(Window.instances)) {
+                        z_index_arr.push({'index': w.getZIndex(),
+                                          'id': w.getId()});
+                    }
+
+                    z_index_arr.sort((a, b) => {
+                        if (a.index === undefined) {
+                            return -1;
+                        } else if (b.index === undefined) {
+                            return 1;
+                        } else {
+                            return a.index - b.index;
+                        }
+                    });
+
+                    let index = 1;
+                    for (const obj of z_index_arr) {
+                        $('#' + obj.id).css('z-index', index);
+                        index += 1;
+                    }
+
+                    this.#dom.css('z-index', index);
+                    Window.#largest_z_index = index;
+                } else {
+                    Window.#largest_z_index += 1;
+                    this.#dom.css('z-index', Window.#largest_z_index);
+                }
             }
 
             window_header.css('background-color', 'black');
             window_header.css('color', 'white');
             window_header.css('fill', 'white');
+
+            window_buttons.css('background-color', 'black');
+            window_buttons.css('color', 'white');
+            window_buttons.css('fill', 'white');
+            window_buttons.css('border-left-color', 'white');
 
             for (const w of Object.values(Window.instances)) {
                 if (w.getId() !== this.getId()) {
@@ -616,10 +692,21 @@ class Window {
      *  Unfocuses a window.
      */
     unfocus() {
-        let unfocused_header = this.#dom.find('.window_header');
+        let unfocused_header = $('#' + this.#id + '_header');
+        let unfocused_buttons = unfocused_header.find('.window_buttons');
+
         unfocused_header.css('background-color', 'lightgray');
         unfocused_header.css('color', 'black');
         unfocused_header.css('fill', 'black');
+
+        unfocused_buttons.css('background-color', 'lightgray');
+        unfocused_buttons.css('color', 'black');
+        unfocused_buttons.css('fill', 'black');
+        unfocused_buttons.css('border-left-color', 'black');
+
+        if (Window.#current_focused_id === this.#id) {
+            Window.#current_focused_id = undefined;
+        }
     }
 
     // Private, not meant to be called by any external code.
@@ -634,7 +721,21 @@ class Window {
      *  Triggers window resizing event-wise.
      */
     triggerResize() {
-        this.#being_resized = this.startResize();
+        if (this.#being_resized) {
+            return;
+        }
+
+        if (Window.isInCompactMode()) {
+            if (this.startResize()) {
+                if (Window.#current_focused_id === this.#id) {
+                    this.finishResize();
+                } else {
+                    this.#being_resized = true;
+                }
+            }
+        } else {
+            this.#being_resized = this.startResize();
+        }
     }
 
     /**
@@ -688,6 +789,10 @@ class Window {
     onRefreshClick(event) {
         Window.stopPropagation(event);
 
+        if (Window.isInCompactMode()) {
+            this.focus();
+        }
+
         this.prepareRefresh(this.#setup_data);
 
         this.#dom.find('.window_content').html(this.#getProcessedContentObject());
@@ -737,6 +842,7 @@ class Window {
         this.#loading_jquery.attr('class', 'loading');
         this.#loading_jquery.prependTo(this.#dom.find('.window_content'));
         this.#loading_jquery.show();
+        $('#' + this.#id + '_header').find('.window_refresh').addClass('disabled');
     }
 
     /**
@@ -744,6 +850,7 @@ class Window {
      */
     hideLoading() {
         this.#loading_jquery.hide();
+        $('#' + this.#id + '_header').find('.window_refresh').removeClass('disabled');
     }
 
     // Private, not meant to be called by any external code.
@@ -756,19 +863,41 @@ class Window {
         }
 
         if (this.#custom_title === undefined) {
-            if (this.#session === undefined) {
-                this.#dom.find('.window_title').text(this.getTitle());
+            let title = undefined;
+
+            if (this.#session === undefined || Window.isInCompactMode()) {
+                title = this.getTitle();
             } else {
-                this.#dom.find('.window_title').text(
-                    '[Session: ' + this.#session.label + '] ' +
-                        this.getTitle());
+                title = '[Session: ' + this.#session.label + '] ' +
+                    this.getTitle();
+
+            }
+
+            let header = existing_window ? $('#' + this.#id + '_header') :
+                this.#dom.find('.window_header');
+
+            header.find('.window_title').text(title);
+
+            if (Window.isInCompactMode()) {
+                header.attr('title', title);
             }
         }
 
         this.showLoading();
 
         if (!existing_window) {
-            this.#dom.appendTo('body');
+            if (Window.isInCompactMode()) {
+                $('#tabs_content').append(this.#dom.find('.window_header'));
+                $('#tabs').prop('scrollLeft', $('#tabs').prop('scrollWidth'));
+                this.#dom.css('height', '100%');
+                this.#dom.css('width', '100%');
+
+                $('#graph').hide();
+                $('#block').append(this.#dom);
+            } else {
+                this.#dom.appendTo('body');
+            }
+
             this.focus();
         }
 
@@ -810,12 +939,22 @@ class Window {
 
         this.prepareClose();
 
+        $('#' + this.#id + '_header').remove();
         this.#dom.remove();
+
         delete Window.instances[this.#id];
+
+        if (Window.#current_focused_id === this.#id) {
+            Window.#current_focused_id = undefined;
+        }
 
         let keys = Object.keys(Window.instances);
 
         if (keys.length === 0) {
+            if (Window.isInCompactMode()) {
+                openSystemGraph();
+            }
+
             return;
         }
 
@@ -831,7 +970,7 @@ class Window {
         Window.stopPropagation(event);
 
         let window_content = this.#dom.find('.window_content');
-        let window_header = this.#dom.find('.window_header');
+        let window_header = $('#' + this.#id + '_header');
 
         if (!this.#collapsed) {
             let position = this.#dom.position();
@@ -1064,7 +1203,7 @@ class SettingsWindow extends Window {
     }
 
     startResize() {
-
+        return false;
     }
 
     finishResize() {
@@ -1079,6 +1218,7 @@ class SettingsWindow extends Window {
         if (this.#current_backend !== undefined) {
             this.#current_backend.hide();
             this.#current_backend.appendTo('body');
+            this.#current_backend = undefined;
         }
     }
 
@@ -1087,13 +1227,40 @@ class SettingsWindow extends Window {
             this.#current_backend.hide();
             this.#current_backend.appendTo('body');
         }
+
+        $('#settings_settings').attr('class', 'pointer');
+        $('#settings_settings').find('title').text('Settings');
+        $('#settings_settings').attr('onclick', 'onSettingsClick(event)');
     }
 
     _setup(data, existing_window) {
+        if (!existing_window) {
+            $('#settings_settings').attr('class', 'disabled');
+            $('#settings_settings').find('title').text('Settings (already open)');
+            $('#settings_settings').attr('onclick', '');
+        }
+
+        let names = [];
+
         $('.settings_block').each((i, elem) => {
-            this.getContent().find('.settings_backends_combobox').append(
-                new Option($(elem).attr('data-backend'), $(elem).attr('id')));
+            names.push([$(elem).attr('data-backend'), $(elem).attr('id')]);
         });
+
+        names.sort((a, b) => {
+            if (a[0].toLowerCase() < b[0].toLowerCase()) {
+                return -1;
+            } else if (a[0].toLowerCase() > b[0].toLowerCase()) {
+                return 1;
+            } else {
+                return 0;
+            }
+        });
+
+        names.forEach(entry => {
+            this.getContent().find('.settings_backends_combobox').append(
+                new Option(entry[0], entry[1]));
+        });
+
         this.getContent().find('.settings_backends_combobox').on('change', event => {
             this.getContent().find('.settings_backends_combobox option:selected').each((i, elem) => {
                 let id = $(elem).val();
@@ -1111,6 +1278,22 @@ class SettingsWindow extends Window {
             });
         });
         this.hideLoading();
+    }
+}
+
+// Private, not meant to be called by any external code.
+function openSystemGraph() {
+    if ($('#graph').is(':hidden')) {
+        let current_content = $('#block').children();
+        current_content.hide();
+        $('#graph').show();
+        $('#footer_text').show();
+
+        for (const w of Object.values(Window.instances)) {
+            w.unfocus();
+        }
+
+        Window.system_graph_view.refresh();
     }
 }
 
@@ -1134,11 +1317,19 @@ function loadCurrentSession() {
         }
     };
 
-    $('#refresh').attr('class', 'disabled');
+    $('#refresh').addClass('disabled');
     $('#refresh').attr('onclick', '');
-    $('#block').html('');
-    $('#loading').css('display', 'flex');
-    $('#footer_text').text('Please wait...');
+    $('#graph').html('');
+
+    if (Window.isInCompactMode()) {
+        $('#loading').addClass('loading');
+        $('#block').append($('#loading'));
+        $('#loading').css('display', 'flex');
+    } else {
+        $('#loading').css('display', 'flex');
+        $('#footer_text').text('Please wait...');
+    }
+
     $('#results_combobox option:selected').each(function() {
         let id = $(this).val();
         let label = $(this).attr('data-label');
@@ -1162,15 +1353,17 @@ function loadCurrentSession() {
             for (let node of Object.keys(positions)) {
                 graph.mergeNodeAttributes(node, positions[node]);
             }
-            let view = new Sigma(graph, $('#block')[0], {
+            Window.system_graph_view = new Sigma(graph, $('#graph')[0], {
                 renderEdgeLabels: true,
                 defaultEdgeType: 'curve',
                 edgeProgramClasses: {
                     curve: SigmaEdgeCurve.EdgeCurvedArrowProgram
                 },
                 labelSize: 20,
-                edgeLabelSize: 20
+                edgeLabelSize: 20,
+                allowInvalidContainer: true
             });
+            let view = Window.system_graph_view;
             view.getCamera().setState({ratio: 2});
             view.on('doubleClickNode', (node) => {
                 node.event.preventSigmaDefault();
@@ -1231,7 +1424,13 @@ function loadCurrentSession() {
                                 node.event.original.pageY,
                                 options);
             });
+
             $('#loading').hide();
+
+            if (Window.isInCompactMode()) {
+                $('#loading').removeClass('loading');
+                $('#footer').append($('#loading'));
+            }
 
             let non_zero_exit_codes = [];
 
@@ -1242,8 +1441,9 @@ function loadCurrentSession() {
             }
 
             if (non_zero_exit_codes.length === 0) {
-                $('#footer_text').text('You can see a graph describing your computer system. ' +
-                                       'Double-click any node and select a module to open an internal window ' +
+                $('#footer_text').html('You can see a graph describing your computer system. ' +
+                                       'Double-click any node and select a module to open an internal ' +
+                                       (Window.isInCompactMode() ? 'tab' : 'window') + ' ' +
                                        'with a detailed analysis of the node done by the module.');
             } else {
                 let entity_cnt_hover = '';
@@ -1256,8 +1456,8 @@ function loadCurrentSession() {
                         (i < non_zero_exit_codes.length - 1 ? '\n' : '');
                 }
 
-                $('#footer_text').html('You can see a graph describing your computer system. ' +
-                                       'Double-click any node and select a module to open an internal window ' +
+                $('#footer_text').html('Double-click any node and select a module to open an internal ' +
+                                       (Window.isInCompactMode() ? 'tab' : 'window') + ' ' +
                                        'with a detailed analysis of the node done by the module.<br />' +
                                        '<b><font color="#ff9900">WARNING:</font></b> The workflow in ' +
                                        '<span style="cursor:help; text-decoration:underline" ' +
@@ -1268,10 +1468,16 @@ function loadCurrentSession() {
                                        'see more details.');
             }
 
-            $('#refresh').attr('class', '');
+            $('#refresh').removeClass('disabled');
             $('#refresh').attr('onclick', 'loadCurrentSession()');
         }).fail(ajax_obj => {
             $('#loading').hide();
+
+            if (Window.isInCompactMode()) {
+                $('#loading').removeClass('loading');
+                $('#footer').append($('#loading'));
+            }
+
             if (ajax_obj.status === 500) {
                 $('#footer_text').html('<b><font color="red">Could not load the session because of an ' +
                                        'error on the server side!</font></b>');
@@ -1283,8 +1489,6 @@ function loadCurrentSession() {
     });
 }
 
-$(document).on('change', '#results_combobox', loadCurrentSession);
-
 // Private, not meant to be called by any external code.
 function onSessionRefreshClick(event) {
     loadCurrentSession();
@@ -1294,3 +1498,31 @@ function onSessionRefreshClick(event) {
 function onSettingsClick(event) {
     new SettingsWindow(undefined, undefined, undefined, {});
 }
+
+$(document).ready(() => {
+    if ($('body').attr('data-session') != undefined) {
+        $('#results_combobox').val($('body').attr('data-session'));
+        loadCurrentSession();
+    }
+
+    if (Window.isInCompactMode()) {
+        $('#tabs')[0].addEventListener('wheel', event => {
+            let coefficient = undefined;
+
+            if (event.deltaMode === WheelEvent.DOM_DELTA_PIXEL) {
+                coefficient = 1;
+            } else if (event.deltaMode === WheelEvent.DOM_DELTA_LINE) {
+                coefficient = 10;
+            } else if (event.deltaMode === WheelEvent.DOM_DELTA_PAGE) {
+                coefficient = 20;
+            } else {
+                coefficient = 0;
+            }
+
+            $('#tabs').prop('scrollLeft',
+                            Math.max(0, $('#tabs').prop('scrollLeft') + coefficient * event.deltaY));
+        });
+    } else {
+        $(document).on('change', '#results_combobox', loadCurrentSession);
+    }
+});
