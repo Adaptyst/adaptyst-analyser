@@ -26,7 +26,13 @@ SPDX-License-Identifier: LGPL-3.0-or-later
             src="{{ url_for('static', filename='viewer.js') }}"></script>
   </head>
   {% if compact %}
+
+  {% if session %}
   <body onclick="Menu.closeMenu()" data-compact="1" data-session="{{ session }}">
+  {% else %}
+  <body onclick="Menu.closeMenu()" data-compact="1">
+  {% endif %}
+
   {% elif session %}
   <body onclick="Menu.closeMenu()" data-session="{{ session }}">
   {% else %}
@@ -57,7 +63,11 @@ SPDX-License-Identifier: LGPL-3.0-or-later
             <!-- The SVG below is from Google Material Icons, licensing:
                  SPDX-FileCopyrightText: Google
                  SPDX-License-Identifier: Apache-2.0 -->
+            {% if session %}
             <a href="/?session={{ session }}" target="_blank" id="home">
+            {% else %}
+            <a href="/" target="_blank" id="home">
+            {% endif %}
               <svg xmlns="http://www.w3.org/2000/svg" width="32px" height="32px"
                    viewBox="0 -960 960 960" width="32px" fill="#000000">
                 <title>Open Adaptyst Analyser in standard mode</title>
