@@ -227,6 +227,11 @@ object {
     cursor:not-allowed;
 }
 
+.disabled_wait {
+    fill:rgba(0, 0, 0, 0.5);
+    cursor:wait;
+}
+
 #main_header {
     display:flex;
     align-items:center;

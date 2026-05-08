@@ -933,6 +933,13 @@ class Window {
         throw new Error('This is an abstract method!');
     }
 
+    /**
+     *  TODO: Document this.
+     */
+    getDependencies() {
+        return [];
+    }
+
     // Private, not meant to be called by any external code.
     close(event) {
         Window.stopPropagation(event);
@@ -1497,6 +1504,26 @@ function onSessionRefreshClick(event) {
 // Private, not meant to be called by any external code.
 function onSettingsClick(event) {
     new SettingsWindow(undefined, undefined, undefined, {});
+}
+
+// Private, not meant to be called by any external code.
+function onShareClick(event) {
+    let getName = () => {
+        return window.prompt(
+            "You're about to save the current arrangement for " +
+                "opening later or sharing with others using the same Adaptyst Analyser instance.\n\n" +
+                "An arrangement is defined as your current session choice and all of your windows " +
+                "along with their content if the content export is supported by a corresponding module.\n\n" +
+                "What name would you like to give to your arrangement? It must not be empty.");
+    };
+
+    let name = getName();
+
+    if (name == undefined || name === "") {
+        return;
+    }
+
+    window.alert(name);
 }
 
 // Private, not meant to be called by any external code.
