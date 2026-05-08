@@ -3,6 +3,10 @@ SPDX-FileCopyrightText: 2026 CERN
 SPDX-License-Identifier: LGPL-3.0-or-later
 */
 
+html {
+    overflow:visible;
+}
+
 #main {
     height:90vh;
     width:90vw;

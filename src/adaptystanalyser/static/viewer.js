@@ -1499,6 +1499,18 @@ function onSettingsClick(event) {
     new SettingsWindow(undefined, undefined, undefined, {});
 }
 
+// Private, not meant to be called by any external code.
+function onShowFooterClick(event) {
+    $('#footer').removeClass('footer_hidden');
+    $('#footer').addClass('footer_shown');
+}
+
+// Private, not meant to be called by any external code.
+function onHideFooterClick(event) {
+    $('#footer').removeClass('footer_shown');
+    $('#footer').addClass('footer_hidden');
+}
+
 $(document).ready(() => {
     if ($('body').attr('data-session') != undefined) {
         $('#results_combobox').val($('body').attr('data-session'));

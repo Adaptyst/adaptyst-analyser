@@ -130,7 +130,31 @@ SPDX-License-Identifier: LGPL-3.0-or-later
 
         </div>
       </div>
+      {% if compact %}
+
+      {% if hide_footer %}
+      <div id="footer" class="footer_hidden">
+      {% else %}
+      <div id="footer" class="footer_shown">
+      {% endif %}
+
+      <!-- The SVGs below are from Google Material Icons, licensing:
+           SPDX-FileCopyrightText: Google
+           SPDX-License-Identifier: Apache-2.0 -->
+      <svg id="footer_show" xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="20px" fill="#000000"
+           class="pointer" onclick="onShowFooterClick(event)">
+        <title>Show the footer</title>
+        <path d="m296-224-56-56 240-240 240 240-56 56-184-183-184 183Zm0-240-56-56 240-240 240 240-56 56-184-183-184 183Z"/>
+      </svg>
+      <svg id="footer_hide" xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="20px" fill="#000000"
+           class="pointer" onclick="onHideFooterClick(event)">
+        <title>Hide the footer</title>
+        <path d="M480-200 240-440l56-56 184 183 184-183 56 56-240 240Zm0-240L240-680l56-56 184 183 184-183 56 56-240 240Z"/>
+      </svg>
+
+      {% else %}
       <div id="footer">
+      {% endif %}
         <div id="loading">
           <img class="loading_image" src="{{ url_for('static', filename='loading.svg') }}"
                alt="Please wait..." title="Please wait..." width="32px" height="32px" />

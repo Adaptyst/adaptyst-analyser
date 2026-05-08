@@ -3,6 +3,10 @@ SPDX-FileCopyrightText: 2026 CERN
 SPDX-License-Identifier: LGPL-3.0-or-later
 */
 
+html {
+    overflow:hidden;
+}
+
 body {
     margin:0;
     height:100%;
@@ -27,6 +31,7 @@ body {
 #footer {
     font-size:14px;
     flex-direction:column;
+    position:relative;
 }
 
 #tabs {
@@ -122,4 +127,32 @@ body {
 
 #footer_pinned_text {
     width:100%;
+}
+
+#footer_text {
+    padding-top:7px;
+}
+
+#footer_show {
+    position:absolute;
+    top:-24px;
+}
+
+#footer_hide {
+    position:absolute;
+    top:-24px;
+}
+
+.footer_hidden {
+    height:0 !important;
+    padding:0 !important;
+    max-height:0 !important;
+}
+
+.footer_hidden > #footer_hide {
+    display:none;
+}
+
+.footer_shown > #footer_show {
+    display:none;
 }

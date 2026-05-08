@@ -121,4 +121,5 @@ def main():
         backends=backends,
         min_mod_vers=json.dumps(min_mod_vers),
         compact=request.values.get('compact', False),
-        session=session), code
+        session=session,
+        hide_footer=request.values.get('hide_footer', False)), code
