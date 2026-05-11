@@ -218,13 +218,19 @@ class Window {
      *  It can be undefined.
      *  @param {int} [x] x-part of the initial upper-left corner
      *  position of a window. If undefined, the value of `y` will
-     *  be ignored and the window will be centered.
+     *  be ignored and the window will be centered. This is always
+     *  ignored in the compact mode.
      *  @param {int} [y] y-part of the initial upper-left corner
      *  position of a window. If undefined, the value of `x` will
-     *  be ignored and the window will be centered.
+     *  be ignored and the window will be centered. This is always
+     *  ignored in the compact mode.
+     *  @param {Array} [window_dependencies] Array of all Window
+     *  objects this window depends on, e.g. for obtaining data.
+     *  It can be undefined.
      */
     constructor(session, entity_id, node_id,
-                module_name, data, x, y) {
+                module_name, data, x, y,
+                window_dependencies) {
         let index = 0;
         let id = undefined;
 
@@ -257,6 +263,7 @@ class Window {
         this.#last_focus = Date.now();
         this.#dom = this.#createWindowDOM();
         this.#custom_title = undefined;
+        this.#window_dependencies = window_dependencies;
 
         if (!Window.isInCompactMode()) {
             if (x !== undefined && y !== undefined) {
@@ -934,10 +941,58 @@ class Window {
     }
 
     /**
-     *  TODO: Document this.
+     *  Gets an array containing the IDs of all windows this window
+     *  depends on, e.g. for obtaining data.
+     *
+     *  This method returns an empty array if no window dependencies
+     *  have been provided in the constructor.
+     *
+     *  @return {Array} Array of window dependencies.
      */
     getDependencies() {
-        return [];
+        if (this.#window_dependencies === undefined) {
+            return [];
+        }
+
+        let array = [];
+
+        for (const w in this.#window_dependencies) {
+            array.push(w.getId());
+        }
+
+        return array;
+    }
+
+    /**
+     *  Returns serialised data to be used for saving the window
+     *  for opening later or sharing with other users of the same
+     *  Adaptyst Analyser instance.
+     *
+     *  There are no specific guidelines on the format of the data
+     *  as long as:
+     *  * the implementation of `importData()` accepts it and
+     *  * it can be converted to string and back
+     *
+     *  @abstract
+     *  @return Serialised data of the window.
+     */
+    exportData() {
+        throw new Error('This is an abstract method!');
+    }
+
+    /**
+     *  Restores the window using data produced by `exportData()`. This
+     *  is used when a user e.g. opens a window arrangement saved
+     *  by another user of the same Adaptyst Analyser instance.
+     *
+     *  If used, this is guaranteed to be called after the window
+     *  is constructed.
+     *
+     *  @abstract
+     *  @param [data] Serialised data of the window to be restored.
+     */
+    importData(data) {
+        throw new Error('This is an abstract method!');
     }
 
     // Private, not meant to be called by any external code.
@@ -1072,8 +1127,11 @@ class Menu {
         menu.css('top', y);
         menu.css('left', x);
         menu.outerHeight('auto');
-        menu.css('display', 'flex');
+        menu.css('display', 'none');
         menu.css('z-index', '10001');
+
+        Menu.closeMenu();
+        $('body').append(menu);
 
         let height = menu.outerHeight();
         let width = menu.outerWidth();
@@ -1086,8 +1144,7 @@ class Menu {
             menu.css('left', Math.max(0, x - width));
         }
 
-        Menu.closeMenu();
-        $('body').append(menu);
+        menu.css('display', 'flex');
     }
 
     /**
@@ -1161,8 +1218,11 @@ class Menu {
         menu.css('top', y);
         menu.css('left', x);
         menu.outerHeight('auto');
-        menu.css('display', 'flex');
+        menu.css('display', 'none');
         menu.css('z-index', '10001');
+
+        Menu.closeMenu();
+        $('body').append(menu);
 
         let height = menu.outerHeight();
         let width = menu.outerWidth();
@@ -1175,8 +1235,7 @@ class Menu {
             menu.css('left', Math.max(0, x - width));
         }
 
-        Menu.closeMenu();
-        $('body').append(menu);
+        menu.css('display', 'flex');
     }
 
     /**
@@ -1327,6 +1386,7 @@ function loadCurrentSession() {
     $('#refresh').removeClass('pointer');
     $('#refresh').addClass('disabled');
     $('#share').removeClass('pointer');
+    $('#share').attr('onclick', '');
     $('#share').addClass('disabled');
     $('#refresh').attr('onclick', '');
     $('#graph').html('');
@@ -1485,6 +1545,7 @@ function loadCurrentSession() {
             $('#footer_text').show();
             $('#share').removeClass('disabled');
             $('#share').addClass('pointer');
+            $('#share').attr('onclick', 'onShareClick(event)');
         }).fail(ajax_obj => {
             $('#loading').hide();
 
@@ -1518,23 +1579,65 @@ function onSettingsClick(event) {
 
 // Private, not meant to be called by any external code.
 function onShareClick(event) {
-    let getName = () => {
-        return window.prompt(
-            "You're about to save the current arrangement for " +
-                "opening later or sharing with others using the same Adaptyst Analyser instance.\n\n" +
-                "An arrangement is defined as your current session choice, the camera state of the system graph, " +
-                "and all of your windows/tabs " +
-                "along with their content if the content export is supported by a corresponding module.\n\n" +
-                "What name would you like to give to your arrangement? It must not be empty.");
+    let getSessionLink = () => {
+        let id = $('#results_combobox option:selected').attr('value');
+        let url = new URL('./?session=' + id, document.baseURI);
+        let open_compact = window.prompt(
+            "Here's the URL you can share with others to let them quickly " +
+                "open your session and explore it themselves.\n\n" +
+                "You can also get the compact mode URL by clicking OK. " +
+                "Compact mode is " +
+                "suitable for tablets, smaller desktop " +
+                "screens, and embedding in websites. This does *not* include phones.",
+            url.href);
+
+        if (open_compact != undefined) {
+            url = new URL('./?compact=1&session=' + id, document.baseURI);
+            let open_hide_footer = window.prompt(
+                "Here's the requested compact mode URL you can share with others.\n\n" +
+                    "You can also get the compact mode URL, where the footer is hidden " +
+                    "by default to make more space (it can be still be toggled by users " +
+                    "if needed). Click OK if you want this.", url.href);
+
+            if (open_hide_footer != undefined) {
+                url = new URL('./?compact=1&hide_footer=1&session=' + id, document.baseURI);
+                window.prompt("Here's the requested compact mode URL with the footer " +
+                              "hidden by default.", url.href);
+            }
+        }
     };
 
-    let name = getName();
+    let saveWindowArrangement = () => {
+        let getName = () => {
+            return window.prompt(
+                "You're about to save the current window arrangement for " +
+                    "opening later or sharing with others using the same Adaptyst Analyser instance.\n\n" +
+                    "A window arrangement is defined as your current session choice, the camera state of the system graph, " +
+                    "and all of your windows/tabs " +
+                    "along with their content if the content export is supported by a corresponding module.\n\n" +
+                    "What name would you like to give to your arrangement? It must not be empty.");
+        };
 
-    if (name == undefined || name === "") {
-        return;
-    }
+        let name = getName();
 
-    window.alert(name);
+        if (name == undefined || name === "") {
+            return;
+        }
+
+        window.alert(name);
+    };
+
+    let options = [
+        ['Get session link', [undefined, getSessionLink]],
+        ['Save window arrangement', [undefined, saveWindowArrangement]]
+    ];
+
+    Menu.createMenu('share_menu',
+                    event.pageX,
+                    event.pageY,
+                    options);
+
+    Window.stopPropagation(event);
 }
 
 // Private, not meant to be called by any external code.
