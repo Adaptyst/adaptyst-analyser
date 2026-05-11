@@ -131,6 +131,7 @@ body {
 
 #footer_text {
     padding-top:7px;
+    display:none;
 }
 
 #footer_show {

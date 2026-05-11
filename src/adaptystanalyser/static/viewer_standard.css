@@ -33,6 +33,11 @@ html {
     cursor:grab;
 }
 
+.window_buttons {
+    display:flex;
+    align-items:center;
+}
+
 .window_refresh, .window_visibility, .window_edit_title, .window_close {
     min-width:24px;
     margin-left:5px;

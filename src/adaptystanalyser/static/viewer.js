@@ -1324,7 +1324,10 @@ function loadCurrentSession() {
         }
     };
 
+    $('#refresh').removeClass('pointer');
     $('#refresh').addClass('disabled');
+    $('#share').removeClass('pointer');
+    $('#share').addClass('disabled');
     $('#refresh').attr('onclick', '');
     $('#graph').html('');
 
@@ -1476,7 +1479,12 @@ function loadCurrentSession() {
             }
 
             $('#refresh').removeClass('disabled');
+            $('#refresh').addClass('pointer');
             $('#refresh').attr('onclick', 'loadCurrentSession()');
+
+            $('#footer_text').show();
+            $('#share').removeClass('disabled');
+            $('#share').addClass('pointer');
         }).fail(ajax_obj => {
             $('#loading').hide();
 
@@ -1492,6 +1500,8 @@ function loadCurrentSession() {
                 $('#footer_text').html('<b><font color="red">Could not load the session! (HTTP code ' +
                                        ajax_obj.status + ')</font></b>');
             }
+
+            $('#footer_text').show();
         });
     });
 }
@@ -1512,7 +1522,8 @@ function onShareClick(event) {
         return window.prompt(
             "You're about to save the current arrangement for " +
                 "opening later or sharing with others using the same Adaptyst Analyser instance.\n\n" +
-                "An arrangement is defined as your current session choice and all of your windows " +
+                "An arrangement is defined as your current session choice, the camera state of the system graph, " +
+                "and all of your windows/tabs " +
                 "along with their content if the content export is supported by a corresponding module.\n\n" +
                 "What name would you like to give to your arrangement? It must not be empty.");
     };
