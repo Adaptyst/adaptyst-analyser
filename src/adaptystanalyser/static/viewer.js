@@ -25,7 +25,6 @@ class Session {
     constructor(id, label) {
         this.id = id;
         this.label = label;
-        this.modules_loaded = {};
         Session.instances[id] = this;
     }
 
@@ -59,7 +58,7 @@ class Session {
      */
     sendRequest(entity, node, module, data, done_func, fail_func,
                 content_type) {
-        if (content_type === undefined) {
+        if (content_type == undefined) {
             content_type = 'json';
         }
 
@@ -90,6 +89,14 @@ class Window {
      *  @static
      */
     static instances = {};
+
+    /**
+     *  Static dictionary storing all modules loaded in the client
+     *  side of Adaptyst Analyser.
+     *
+     *  @static
+     */
+    static modules_loaded = {};
 
     /**
      *  Static variable storing an instance of Sigma for displaying
@@ -179,6 +186,47 @@ class Window {
         return $('body').attr('data-compact') === '1';
     }
 
+    /**
+     *  Creates a window from a JSON string produced by `serialize()`.
+     *  The resulting window object can be accessed in Window.instances
+     *  using the ID stored in the JSON string under "id".
+     *
+     *  @static
+     */
+    static deserialize(json) {
+        let obj = JSON.parse(json);
+
+        import('./modules/' + obj.module + '/backend.js')
+            .then(backend => {
+                if (!(obj.module in Window.modules_loaded)) {
+                    $('<link type="text/css" rel="stylesheet" href="/static/' +
+                      'modules/' + obj.module + '/backend.css" />').appendTo('head');
+                    Window.modules_loaded[obj.module] = true;
+                }
+
+                let window_class = backend.getWindowClass(obj.type);
+
+                if (window_class == undefined) {
+                    window.alert('Could not find window type ' + obj.type + ' in module ' +
+                                 obj.module + '!');
+                    return;
+                }
+
+                new window_class(obj.constr[0],
+                                 obj.constr[1],
+                                 obj.constr[2],
+                                 obj.constr[3],
+                                 obj.constr[4],
+                                 obj.constr[5],
+                                 obj.constr[6],
+                                 obj.dependencies,
+                                 obj.id);
+            }, () => {
+                window.alert('Could not load module ' + obj.module + '! ' +
+                             'Are you sure it is installed?');
+            });
+    }
+
     #id;
     #session;
     #entity_id;
@@ -196,6 +244,8 @@ class Window {
     #last_height;
     #content;
     #custom_title;
+    #window_dependencies;
+    #constructor_data;
 
     /**
      *  Constructs a Window object and displays a window
@@ -214,8 +264,9 @@ class Window {
      *  `createRootWindow()`. It can be undefined.
      *  @param {String} [module_name] The name of a module within
      *  a node corresponding to a window. It can be undefined.
-     *  @param [data] Arbitrary data to be passed to `_setup()`.
-     *  It can be undefined.
+     *  @param [data] Arbitrary data to be passed to `_setup()`. It
+     *  can be undefined. If window serialisation should be supported,
+     *  the provided value must be either undefined or serialisable to JSON.
      *  @param {int} [x] x-part of the initial upper-left corner
      *  position of a window. If undefined, the value of `y` will
      *  be ignored and the window will be centered. This is always
@@ -225,29 +276,35 @@ class Window {
      *  be ignored and the window will be centered. This is always
      *  ignored in the compact mode.
      *  @param {Array} [window_dependencies] Array of all Window
-     *  objects this window depends on, e.g. for obtaining data.
+     *  objects or string IDs this window depends on, e.g. for obtaining data.
      *  It can be undefined.
+     *  @param {String} [custom_id] The ID to be assigned to a window.
+     *  Leave this undefined unless you know what you're doing.
      */
     constructor(session, entity_id, node_id,
                 module_name, data, x, y,
-                window_dependencies) {
+                window_dependencies, custom_id) {
         let index = 0;
         let id = undefined;
 
-        if (session == undefined) {
-            id = `w_${this.getType()}_${index}`;
-
-            while (id in Window.instances) {
-                index++;
+        if (custom_id == undefined) {
+            if (session == undefined) {
                 id = `w_${this.getType()}_${index}`;
+
+                while (id in Window.instances) {
+                    index++;
+                    id = `w_${this.getType()}_${index}`;
+                }
+            } else {
+                id = `w_${session.label}_${this.getType()}_${index}`;
+
+                while (id in Window.instances) {
+                    index++;
+                    id = `w_${session.label}_${this.getType()}_${index}`;
+                }
             }
         } else {
-            id = `w_${session.label}_${this.getType()}_${index}`;
-
-            while (id in Window.instances) {
-                index++;
-                id = `w_${session.label}_${this.getType()}_${index}`;
-            }
+            id = custom_id;
         }
 
         Window.instances[id] = this;
@@ -257,16 +314,34 @@ class Window {
         this.#entity_id = entity_id;
         this.#node_id = node_id;
         this.#data = {};
+        this.#constructor_data = data;
         this.#module_name = module_name;
         this.#being_resized = false;
         this.#collapsed = false;
         this.#last_focus = Date.now();
         this.#dom = this.#createWindowDOM();
         this.#custom_title = undefined;
-        this.#window_dependencies = window_dependencies;
+
+        if (window_dependencies != undefined &&
+            window_dependencies.length > 0 &&
+            window_dependencies[0] instanceof String) {
+            this.#window_dependencies = [];
+
+            for (const s of window_dependencies) {
+                if (!(s in Window.instances)) {
+                    console.error("Could not find a window dependency with ID " + s + " " +
+                                  "when constructing a window of type " + this.getType() + "!");
+                    continue;
+                }
+
+                this.#window_dependencies.push(Window.instances[s]);
+            }
+        } else {
+            this.#window_dependencies = window_dependencies;
+        }
 
         if (!Window.isInCompactMode()) {
-            if (x !== undefined && y !== undefined) {
+            if (x != undefined && y != undefined) {
                 this.#dom.css('left', x + 'px');
                 this.#dom.css('top', y + 'px');
             } else {
@@ -279,7 +354,7 @@ class Window {
         this.#first_resize_call = true;
         new ResizeObserver(Window.onResize).observe(this.#dom[0]);
 
-        if (data === undefined) {
+        if (data == undefined) {
             this.#setup({});
         } else {
             this.#setup(data);
@@ -456,7 +531,7 @@ class Window {
      *  @return {Object} jQuery object representing the content of a window.
      */
     getContent() {
-        if (this.#content === undefined) {
+        if (this.#content == undefined) {
             this.#content = this.#dom.find('.window_content');
         }
 
@@ -560,14 +635,14 @@ class Window {
 
         if (Window.isInCompactMode()) {
             title = window.prompt('Enter a new title for the window.',
-                                  this.#custom_title === undefined ?
+                                  this.#custom_title == undefined ?
                                   $('#' + this.#id + '_header').find('.window_title').text()
                                   : this.#custom_title);
         } else {
             title = window.prompt('Enter a new title for the window. ' +
                                   'The session prefix will remain ' +
                                   'unchanged if present.',
-                                  this.#custom_title === undefined ?
+                                  this.#custom_title == undefined ?
                                   this.getTitle() : this.#custom_title);
         }
 
@@ -575,7 +650,7 @@ class Window {
             return;
         }
 
-        if (this.#session === undefined || Window.isInCompactMode()) {
+        if (this.#session == undefined || Window.isInCompactMode()) {
             $('#' + this.#id + '_header').find('.window_title').text(title);
             $('#' + this.#id + '_header').attr('title', title);
         } else {
@@ -652,9 +727,9 @@ class Window {
                     }
 
                     z_index_arr.sort((a, b) => {
-                        if (a.index === undefined) {
+                        if (a.index == undefined) {
                             return -1;
-                        } else if (b.index === undefined) {
+                        } else if (b.index == undefined) {
                             return 1;
                         } else {
                             return a.index - b.index;
@@ -864,15 +939,15 @@ class Window {
     #setup(data) {
         let existing_window = false;
 
-        if (data === undefined) {
+        if (data == undefined) {
             data = this.#setup_data;
             existing_window = true;
         }
 
-        if (this.#custom_title === undefined) {
+        if (this.#custom_title == undefined) {
             let title = undefined;
 
-            if (this.#session === undefined || Window.isInCompactMode()) {
+            if (this.#session == undefined || Window.isInCompactMode()) {
                 title = this.getTitle();
             } else {
                 title = '[Session: ' + this.#session.label + '] ' +
@@ -941,22 +1016,22 @@ class Window {
     }
 
     /**
-     *  Gets an array containing the IDs of all windows this window
+     *  Gets an array containing the ID strings of all windows this window
      *  depends on, e.g. for obtaining data.
      *
      *  This method returns an empty array if no window dependencies
      *  have been provided in the constructor.
      *
-     *  @return {Array} Array of window dependencies.
+     *  @return {Array} Array of window dependencies in form of ID strings.
      */
     getDependencies() {
-        if (this.#window_dependencies === undefined) {
+        if (this.#window_dependencies == undefined) {
             return [];
         }
 
         let array = [];
 
-        for (const w in this.#window_dependencies) {
+        for (const w of this.#window_dependencies) {
             array.push(w.getId());
         }
 
@@ -964,35 +1039,129 @@ class Window {
     }
 
     /**
-     *  Returns serialised data to be used for saving the window
-     *  for opening later or sharing with other users of the same
-     *  Adaptyst Analyser instance.
+     *  Same as `getDependencies()`, but an array of Window objects
+     *  is returned instead of an array of window ID strings.
      *
-     *  There are no specific guidelines on the format of the data
-     *  as long as:
-     *  * the implementation of `importData()` accepts it and
-     *  * it can be converted to string and back
+     *  @return {Array} Array of window dependencies in form of Window
+     *  objects.
+     */
+    getDependencyObjects() {
+        if (this.#window_dependencies == undefined) {
+            return [];
+        }
+
+        return this.#window_dependencies;
+    }
+
+    /**
+     *  Serialises the window so that it can be reconstructed
+     *  later using `Window.deserialize()`. This is useful e.g.
+     *  for saving the window for opening later or sharing with
+     *  other users of the same Adaptyst Analyser instance.
+     *
+     *  The return format is a JSON string in the following form:
+     *  ```
+     *  {
+     *    "id": <window ID>,
+     *    "module": <module name>,
+     *    "type": <window type>,
+     *    "constr": <array of arguments to be passed to the window constructor>,
+     *    "dependencies": <window dependencies as returned by getDependencies()>,
+     *    "collapsed": <whether the window is collapsed>,
+     *    "custom_title": <custom title if any, may be omitted>,
+     *    "data": <window data returned by _exportData(), may be omitted>
+     *  }
+     *  ```
+     *
+     *  You should not assume that `Window.deserialize()` will be always called
+     *  in the standard mode only or in the compact mode only.
+     *
+     *  @param {int} [x] x-part of the initial upper-left corner position
+     *  of the window in case it cannot be extracted automatically (e.g.
+     *  due to being in the compact mode).
+     *  @param {int} [y] y-part of the initial upper-left corner position
+     *  of the window in case it cannot be extracted automatically (e.g.
+     *  due to being in the compact mode).
+     *  @return Window serialised in form of a JSON string.
+     */
+    serialize(x, y) {
+        if (x == undefined) {
+            console.error('serialize(): x cannot be null/undefined!');
+            return undefined;
+        }
+
+        if (y == undefined) {
+            console.error('serialize(): y cannot be null/undefined!');
+            return undefined;
+        }
+
+        if (!Window.isInCompactMode()) {
+            let x_tmp = Number.parseFloat(this.#dom.css('left'));
+            let y_tmp = Number.parseFloat(this.#dom.css('top'));
+
+            if (!isNaN(x_tmp) && !isNaN(y_tmp)) {
+                x = x_tmp;
+                y = y_tmp;
+            }
+        }
+
+        return JSON.stringify({
+            "id": this.#id,
+            "module": this.#module_name,
+            "type": this.getType(),
+            "constr": [this.#session != undefined ? this.#session.id : undefined,
+                       this.#entity_id,
+                       this.#node_id,
+                       this.#module_name,
+                       this.#constructor_data,
+                       x, y],
+            "dependencies": this.getDependencies(),
+            "collapsed": this.#collapsed,
+            "custom_title": this.#custom_title,
+            "data": this._exportData()
+        });
+    }
+
+    /**
+     *  Returns window content data to be used by `serialize()`.
+     *  The extent to which the contents are saved in `_exportData()`
+     *  is decided by your implementation.
+     *
+     *  When `Window.deserialize()` is called with a dictionary
+     *  produced by `serialize()`, the part there generated by
+     *  `_exportData()` is passed to `_importData()` to restore the window.
+     *
+     *  There are no specific guidelines on the format of the return data
+     *  as long as it is JSON-compatible and accepted by the implementation
+     *  of `_importData()`.
+     *
+     *  This method is intended to be abstract, but for backward
+     *  compatibility reasons, the default implementation returns undefined.
      *
      *  @abstract
      *  @return Serialised data of the window.
      */
-    exportData() {
-        throw new Error('This is an abstract method!');
+    _exportData() {
+        return undefined;
     }
 
     /**
-     *  Restores the window using data produced by `exportData()`. This
-     *  is used when a user e.g. opens a window arrangement saved
-     *  by another user of the same Adaptyst Analyser instance.
+     *  Restores the window using data produced by `_exportData()`. This
+     *  is used by `Window.deserialize()`, called e.g. when a user opens
+     *  a window arrangement saved by another user of the same Adaptyst
+     *  Analyser instance.
      *
      *  If used, this is guaranteed to be called after the window
-     *  is constructed.
+     *  is constructed and `_setup()` is executed.
+     *
+     *  This method is intended to be abstract, but for backward
+     *  compatbility reasons, the default implementation does nothing.
      *
      *  @abstract
      *  @param [data] Serialised data of the window to be restored.
      */
-    importData(data) {
-        throw new Error('This is an abstract method!');
+    _importData(data) {
+
     }
 
     // Private, not meant to be called by any external code.
@@ -1115,7 +1284,7 @@ class Menu {
                 Window.stopPropagation(event);
                 Menu.closeMenu();
 
-                if (event.data.handler !== undefined) {
+                if (event.data.handler != undefined) {
                     event.data.handler(event);
                 }
             });
@@ -1194,7 +1363,7 @@ class Menu {
                 v.item.addClass('menu_item_with_hover');
             }
 
-            if (v.click_handler === undefined) {
+            if (v.click_handler == undefined) {
                 v.item.on('click', event => {
                     Window.stopPropagation(event);
                 });
@@ -1206,7 +1375,7 @@ class Menu {
                     Window.stopPropagation(event);
                     Menu.closeMenu();
 
-                    if (event.data.handler !== undefined) {
+                    if (event.data.handler != undefined) {
                         event.data.handler(event);
                     }
                 });
@@ -1281,7 +1450,7 @@ class SettingsWindow extends Window {
     }
 
     prepareRefresh() {
-        if (this.#current_backend !== undefined) {
+        if (this.#current_backend != undefined) {
             this.#current_backend.hide();
             this.#current_backend.appendTo('body');
             this.#current_backend = undefined;
@@ -1289,7 +1458,7 @@ class SettingsWindow extends Window {
     }
 
     prepareClose() {
-        if (this.#current_backend !== undefined) {
+        if (this.#current_backend != undefined) {
             this.#current_backend.hide();
             this.#current_backend.appendTo('body');
         }
@@ -1331,7 +1500,7 @@ class SettingsWindow extends Window {
             this.getContent().find('.settings_backends_combobox option:selected').each((i, elem) => {
                 let id = $(elem).val();
 
-                if (this.#current_backend === undefined) {
+                if (this.#current_backend == undefined) {
                     this.getContent().find('.settings_space').html('');
                 } else {
                     this.#current_backend.hide();
@@ -1473,10 +1642,10 @@ function loadCurrentSession() {
                                       import('./modules/' + event.data.data.backend_name + '/backend.js')
                                           .then(backend => {
                                               if (!(event.data.data.backend_name in
-                                                    event.data.data.session.modules_loaded)) {
+                                                    Window.modules_loaded)) {
                                                   $('<link type="text/css" rel="stylesheet" href="/static/' +
                                                     'modules/' + event.data.data.backend_name + '/backend.css" />').appendTo('head');
-                                                  event.data.data.session.modules_loaded[event.data.data.backend_name] = true;
+                                                  Window.modules_loaded[event.data.data.backend_name] = true;
                                               }
 
                                               backend.createRootWindow(event.data.data.entity,
@@ -1568,6 +1737,75 @@ function loadCurrentSession() {
 }
 
 // Private, not meant to be called by any external code.
+function openSessionLinkDialogs() {
+    let id = $('#results_combobox option:selected').attr('value');
+    let url = new URL('./?session=' + id, document.baseURI);
+    let open_compact = window.prompt(
+        "Here's the URL you can share with others to let them quickly " +
+            "open your session and explore it themselves.\n\n" +
+            "You can also get the compact mode URL by clicking OK. " +
+            "Compact mode is " +
+            "suitable for tablets, smaller desktop " +
+            "screens, and embedding in websites. This does *not* include phones.",
+        url.href);
+
+    if (open_compact != undefined) {
+        url = new URL('./?compact=1&session=' + id, document.baseURI);
+        let open_hide_footer = window.prompt(
+            "Here's the requested compact mode URL you can share with others.\n\n" +
+                "You can also get the compact mode URL, where the footer is hidden " +
+                "by default to make more space (it can be still be toggled by users " +
+                "if needed). Click OK if you want this.", url.href);
+
+        if (open_hide_footer != undefined) {
+            url = new URL('./?compact=1&hide_footer=1&session=' + id, document.baseURI);
+            window.prompt("Here's the requested compact mode URL with the footer " +
+                          "hidden by default.", url.href);
+        }
+    }
+}
+
+// Private, not meant to be called by any external code.
+function saveWindowArrangement() {
+    let getName = () => {
+        return window.prompt(
+            "You're about to save the current window arrangement for " +
+                "opening later or sharing with others using the same Adaptyst Analyser instance.\n\n" +
+                "A window arrangement is defined as your current session choice, the camera state of the system graph, " +
+                "and all of your windows/tabs " +
+                "along with their content if the content export is supported by a corresponding module.\n\n" +
+                "What name would you like to give to your arrangement? It must not be empty.");
+    };
+
+    let name = getName();
+
+    if (name == undefined || name === "") {
+        return;
+    }
+
+    let session_id = $('#results_combobox option:selected').attr('value');
+    let camera_state = Window.system_graph_view.getCamera().getState();
+    let windows = {};
+
+    let cur_x = 10;
+    let cur_y = 10;
+
+    for (const w of Object.values(Window.instances)) {
+        windows[w.getId()] = w.serialize(cur_x, cur_y);
+        cur_x += 20;
+        cur_y += 20;
+    }
+
+    let arrangement = {
+        "session": session_id,
+        "camera_state": camera_state,
+        "windows": windows
+    };
+
+    window.alert(JSON.stringify(arrangement));
+}
+
+// Private, not meant to be called by any external code.
 function onSessionRefreshClick(event) {
     loadCurrentSession();
 }
@@ -1579,56 +1817,8 @@ function onSettingsClick(event) {
 
 // Private, not meant to be called by any external code.
 function onShareClick(event) {
-    let getSessionLink = () => {
-        let id = $('#results_combobox option:selected').attr('value');
-        let url = new URL('./?session=' + id, document.baseURI);
-        let open_compact = window.prompt(
-            "Here's the URL you can share with others to let them quickly " +
-                "open your session and explore it themselves.\n\n" +
-                "You can also get the compact mode URL by clicking OK. " +
-                "Compact mode is " +
-                "suitable for tablets, smaller desktop " +
-                "screens, and embedding in websites. This does *not* include phones.",
-            url.href);
-
-        if (open_compact != undefined) {
-            url = new URL('./?compact=1&session=' + id, document.baseURI);
-            let open_hide_footer = window.prompt(
-                "Here's the requested compact mode URL you can share with others.\n\n" +
-                    "You can also get the compact mode URL, where the footer is hidden " +
-                    "by default to make more space (it can be still be toggled by users " +
-                    "if needed). Click OK if you want this.", url.href);
-
-            if (open_hide_footer != undefined) {
-                url = new URL('./?compact=1&hide_footer=1&session=' + id, document.baseURI);
-                window.prompt("Here's the requested compact mode URL with the footer " +
-                              "hidden by default.", url.href);
-            }
-        }
-    };
-
-    let saveWindowArrangement = () => {
-        let getName = () => {
-            return window.prompt(
-                "You're about to save the current window arrangement for " +
-                    "opening later or sharing with others using the same Adaptyst Analyser instance.\n\n" +
-                    "A window arrangement is defined as your current session choice, the camera state of the system graph, " +
-                    "and all of your windows/tabs " +
-                    "along with their content if the content export is supported by a corresponding module.\n\n" +
-                    "What name would you like to give to your arrangement? It must not be empty.");
-        };
-
-        let name = getName();
-
-        if (name == undefined || name === "") {
-            return;
-        }
-
-        window.alert(name);
-    };
-
     let options = [
-        ['Get session link', [undefined, getSessionLink]],
+        ['Get session link', [undefined, openSessionLinkDialogs]],
         ['Save window arrangement', [undefined, saveWindowArrangement]]
     ];
 
@@ -1644,12 +1834,20 @@ function onShareClick(event) {
 function onShowFooterClick(event) {
     $('#footer').removeClass('footer_hidden');
     $('#footer').addClass('footer_shown');
+
+    if ($('#graph').is(':visible')) {
+        Window.system_graph_view.refresh();
+    }
 }
 
 // Private, not meant to be called by any external code.
 function onHideFooterClick(event) {
     $('#footer').removeClass('footer_shown');
     $('#footer').addClass('footer_hidden');
+
+    if ($('#graph').is(':visible')) {
+        Window.system_graph_view.refresh();
+    }
 }
 
 $(document).ready(() => {
