@@ -1790,7 +1790,12 @@ function saveWindowArrangement() {
     let cur_x = 10;
     let cur_y = 10;
 
-    for (const w of Object.values(Window.instances)) {
+    let instances = Object.values(Window.instances);
+    instances.sort((a, b) => {
+        return a.getLastFocusTime() - b.getLastFocusTime();
+    });
+
+    for (const w of instances) {
         windows[w.getId()] = w.serialize(cur_x, cur_y);
         cur_x += 20;
         cur_y += 20;
