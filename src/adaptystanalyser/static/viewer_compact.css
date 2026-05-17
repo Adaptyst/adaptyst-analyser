@@ -35,11 +35,10 @@ body {
 }
 
 #tabs {
-    margin-bottom:20px;
     border-bottom-style:double;
     border-bottom-color:gray;
     border-bottom-width:3px;
-    overflow-x:scroll;
+    overflow-x:auto;
     white-space:nowrap;
     min-height:50px;
     height:50px;
@@ -94,7 +93,7 @@ body {
     background-color:darkblue;
 }
 
-.window_refresh, .window_edit_title, .window_close {
+.window_refresh, .window_share, .window_edit_title, .window_close {
     min-height:100%;
     max-height:100%;
 }
@@ -156,4 +155,37 @@ body {
 
 .footer_shown > #footer_show {
     display:none;
+}
+
+#header_show {
+    position:absolute;
+    bottom:-22px;
+    left:50%;
+    transform:translate(-50%, 0);
+}
+
+#header_hide {
+    position:absolute;
+    bottom:-22px;
+    left:50%;
+    transform:translate(-50%, 0);
+}
+
+.header_hidden > #header_hide {
+    display:none;
+}
+
+.header_shown > #header_show {
+    display:none;
+}
+
+.header_hidden {
+    #tabs, #copyright, #header_right {
+        display:none;
+    }
+
+    #main_title {
+        font-size:14px;
+        margin:0;
+    }
 }

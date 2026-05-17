@@ -9,6 +9,7 @@ import yaml
 import shutil
 import filecmp
 import urllib.request
+import getpass
 from urllib.parse import urlparse
 from pathlib import Path
 from importlib import import_module
@@ -35,6 +36,13 @@ def main():
                         help='address and port to bind to, '
                         'default: 127.0.0.1:8000',
                         default='127.0.0.1:8000')
+    parser.add_argument('-s',
+                        metavar='ADDR',
+                        dest='database', type=str,
+                        help='database to connect to for '
+                        'storing arrangements (use the SQLAlchemy database URL syntax), '
+                        'a user-local SQLite '
+                        'database is created and used by default')
     parser.add_argument('-t',
                         metavar='TITLE', dest='title', type=str, default='',
                         help='custom title to be displayed alongside '
@@ -58,6 +66,18 @@ def main():
     parser.add_argument('-l', dest='list', action='store_true',
                         help='list in detail all installed Adaptyst Analyser '
                         'modules')
+
+    password_group = parser.add_mutually_exclusive_group()
+    password_group.add_argument('--password-stdin',
+                                action='store_true',
+                                dest='password_stdin',
+                                help='read database password from stdin (-s must be used)')
+    password_group.add_argument('--password-env',
+                                action='store_true',
+                                dest='password_env',
+                                help='read database password from the '
+                                'ADAPTYST_ANALYSER_DB_PASSWORD '
+                                'environment variable (-s must be used)')
 
     args = parser.parse_args()
 
@@ -400,6 +420,31 @@ def main():
               'performance analysis result inspection mode...',
               file=sys.stderr)
 
+        if args.password_stdin:
+            if args.database:
+                password = getpass.getpass(prompt='Please enter your database '
+                                           'password: ')
+            else:
+                print('--password-stdin requires -s, ignoring.',
+                      file=sys.stderr)
+                password = None
+        elif args.password_env:
+            if args.database:
+                password = os.getenv('ADAPTYST_ANALYSER_DB_PASSWORD')
+
+                if password is None:
+                    print('No ADAPTYST_ANALYSER_DB_PASSWORD env variable detected, '
+                          'ignoring.', file=sys.stderr)
+                else:
+                    print('Database password read from ADAPTYST_ANALYSER_DB_PASSWORD '
+                          'env variable.', file=sys.stderr)
+            else:
+                print('--password-env requires -s, ignoring.',
+                      file=sys.stderr)
+                password = None
+        else:
+            password = None
+
         module_path = Path(__file__).parent / 'modules'
 
         if module_path.exists():
@@ -428,6 +473,12 @@ def main():
             'FLASK_CUSTOM_TITLE': args.title,
             'FLASK_BACKGROUND_CSS': args.background
         })
+
+        if args.database:
+            env['FLASK_DATABASE_URL'] = args.database
+
+        if password:
+            env['FLASK_DATABASE_PASSWORD'] = password
 
         try:
             return subprocess.run(['gunicorn', '-b', args.address,

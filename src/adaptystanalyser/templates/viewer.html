@@ -11,10 +11,6 @@ SPDX-License-Identifier: LGPL-3.0-or-later
     <script type="text/javascript"
             src="{{ url_for('static', filename=script) }}"></script>
     {% endfor %}
-    {% for stylesheet in stylesheets %}
-    <link type="text/css" rel="stylesheet"
-          href="{{ url_for('static', filename=stylesheet) }}" />
-    {% endfor %}
     {% if compact %}
     <link type="text/css" rel="stylesheet"
           href="{{ url_for('static', filename='viewer_compact.css') }}" />
@@ -22,6 +18,12 @@ SPDX-License-Identifier: LGPL-3.0-or-later
     <link type="text/css" rel="stylesheet"
           href="{{ url_for('static', filename='viewer_standard.css') }}" />
     {% endif %}
+    <link type="text/css" rel="stylesheet"
+          href="{{ url_for('static', filename='viewer_common.css') }}" />
+    {% for stylesheet in stylesheets %}
+    <link type="text/css" rel="stylesheet"
+          href="{{ url_for('static', filename=stylesheet) }}" />
+    {% endfor %}
     <script type="text/javascript" id="viewer_script" data-min-mod-vers="{{ min_mod_vers }}"
             src="{{ url_for('static', filename='viewer.js') }}"></script>
   </head>
@@ -38,7 +40,30 @@ SPDX-License-Identifier: LGPL-3.0-or-later
   {% else %}
   <body>
   {% endif %}
-    <div id="main">
+  <div id="main">
+    {% if compact %}
+
+    {% if hide_header %}
+    <div id="header_container" class="header_hidden">
+    {% else %}
+    <div id="header_container" class="header_shown">
+    {% endif %}
+      <!-- The SVGs below are from Google Material Icons, licensing:
+           SPDX-FileCopyrightText: Google
+           SPDX-License-Identifier: Apache-2.0 -->
+      <svg id="header_hide" xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="20px" fill="#000000"
+           class="pointer" onclick="onHideHeaderClick(event)">
+        <title>Hide the header</title>
+        <path d="m296-224-56-56 240-240 240 240-56 56-184-183-184 183Zm0-240-56-56 240-240 240 240-56 56-184-183-184 183Z"/>
+      </svg>
+      <svg id="header_show" xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="20px" fill="#000000"
+           class="pointer" onclick="onShowHeaderClick(event)">
+        <title>Show the header</title>
+        <path d="M480-200 240-440l56-56 184 183 184-183 56 56-240 240Zm0-240L240-680l56-56 184 183 184-183 56 56-240 240Z"/>
+      </svg>
+    {% else %}
+    <div id="header_container">
+    {% endif %}
       <div id="header">
         <noscript>
           <div style="width:100%">
@@ -141,6 +166,7 @@ SPDX-License-Identifier: LGPL-3.0-or-later
         </div>
       </div>
       {% endif %}
+      </div>
       <div id="block" class="scrollable">
         <div id="graph">
 

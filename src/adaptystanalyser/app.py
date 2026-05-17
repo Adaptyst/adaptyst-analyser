@@ -4,6 +4,7 @@
 import traceback
 import yaml
 import json
+from . import arrangements as arrgmts
 from flask import Flask, render_template, request
 from pathlib import Path
 from . import PerformanceAnalysisResults
@@ -30,7 +31,7 @@ scripts = ['jquery.min.js'] + \
                     static_path.glob('deps/*.js')))) + \
     list(sorted(map(lambda x: 'deps/' + x.name,
                     static_path.glob('deps/*.cjs'))))
-stylesheets = ['viewer_common.css'] + \
+stylesheets = \
     list(sorted(map(lambda x: 'modules/' + x.parent.name + '/settings.css',
                     static_path.glob('modules/*/settings.css')))) + \
     list(sorted(map(lambda x: 'deps/' + x.name,
@@ -51,6 +52,9 @@ for p in Path(app.root_path).glob('modules/*/metadata.yml'):
     with p.open(mode='r') as f:
         metadata = yaml.safe_load(f)
     min_mod_vers[mod_id] = metadata.get('min_module_version', [])
+
+arrgmts.Base.initialize(app.config.get('DATABASE_URL', None),
+                        app.config.get('DATABASE_PASSWORD', None))
 
 
 @app.get('/<identifier>/')
@@ -81,6 +85,31 @@ def post(identifier, entity, node, module):
     except ImportError:
         traceback.print_exc()
         return '', 500
+
+
+@app.post('/arrgmt')
+def arrgmt_post():
+    if 'type' not in request.values:
+        return '', 401
+
+    req_type = request.values['type']
+
+    if req_type == 'check_name':
+        return arrgmts.Arrangement.req_check_name(request.values)
+    elif req_type == 'check_token':
+        return arrgmts.Arrangement.req_check_token(request.values)
+    elif req_type == 'save':
+        return arrgmts.Arrangement.req_save(request.values)
+    elif req_type == 'edit_name':
+        return arrgmts.Arrangement.req_edit_name(request.values)
+    elif req_type == 'delete':
+        return arrgmts.Arrangement.req_delete(request.values)
+    elif req_type == 'get':
+        return arrgmts.Arrangement.req_get(request.values)
+    elif req_type == 'list':
+        return arrgmts.Arrangement.req_list(request.values)
+    else:
+        return '', 401
 
 
 @app.get('/')
@@ -122,4 +151,5 @@ def main():
         min_mod_vers=json.dumps(min_mod_vers),
         compact=request.values.get('compact', False),
         session=session,
+        hide_header=request.values.get('hide_header', False),
         hide_footer=request.values.get('hide_footer', False)), code

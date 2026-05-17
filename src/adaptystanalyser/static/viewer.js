@@ -171,8 +171,10 @@ class Window {
      *  @static
      */
     static stopPropagation(event) {
-        event.stopPropagation();
-        event.preventDefault();
+        if (event != undefined) {
+            event.stopPropagation();
+            event.preventDefault();
+        }
     }
 
     /**
@@ -212,15 +214,22 @@ class Window {
                     return;
                 }
 
-                new window_class(obj.constr[0],
-                                 obj.constr[1],
-                                 obj.constr[2],
-                                 obj.constr[3],
-                                 obj.constr[4],
-                                 obj.constr[5],
-                                 obj.constr[6],
-                                 obj.dependencies,
-                                 obj.id);
+                let w = new window_class(obj.constr[0],
+                                         obj.constr[1],
+                                         obj.constr[2],
+                                         obj.constr[3],
+                                         obj.constr[4],
+                                         obj.constr[5],
+                                         obj.constr[6],
+                                         obj.dependencies,
+                                         obj.id, obj.width,
+                                         obj.height);
+
+                w.#editTitle(obj.custom_title);
+
+                if (obj.collapsed) {
+                    w.onVisibilityClick();
+                }
             }, () => {
                 window.alert('Could not load module ' + obj.module + '! ' +
                              'Are you sure it is installed?');
@@ -246,6 +255,7 @@ class Window {
     #custom_title;
     #window_dependencies;
     #constructor_data;
+    #ready_handler;
 
     /**
      *  Constructs a Window object and displays a window
@@ -264,14 +274,15 @@ class Window {
      *  `createRootWindow()`. It can be undefined.
      *  @param {String} [module_name] The name of a module within
      *  a node corresponding to a window. It can be undefined.
-     *  @param [data] Arbitrary data to be passed to `_setup()`. It
-     *  can be undefined. If window serialisation should be supported,
-     *  the provided value must be either undefined or serialisable to JSON.
-     *  @param {int} [x] x-part of the initial upper-left corner
+     *  @param [data] Arbitrary data to be passed to `_setup()` and
+     *  `getTitle()`. It can be undefined. If window serialisation should be
+     *  supported, the provided value must be either undefined or serialisable
+     *  to JSON.
+     *  @param {float} [x] x-part of the initial upper-left corner
      *  position of a window. If undefined, the value of `y` will
      *  be ignored and the window will be centered. This is always
      *  ignored in the compact mode.
-     *  @param {int} [y] y-part of the initial upper-left corner
+     *  @param {float} [y] y-part of the initial upper-left corner
      *  position of a window. If undefined, the value of `x` will
      *  be ignored and the window will be centered. This is always
      *  ignored in the compact mode.
@@ -280,10 +291,22 @@ class Window {
      *  It can be undefined.
      *  @param {String} [custom_id] The ID to be assigned to a window.
      *  Leave this undefined unless you know what you're doing.
+     *  @param {float} [width] Width of a window. It cannot be smaller
+     *  than the minimum width specified in the CSS stylesheet of the
+     *  module. If undefined, the default value will be used. This is
+     *  always ignored in the compact mode.
+     *  @param {float} [height] Height of a window. It cannot be smaller
+     *  than the minimum height specified in the CSS stylesheet of the
+     *  module. If undefined, the default value will be used. This is
+     *  always ignored in the compact mode.
+     *  @param {Function} [ready_handler] Function to be called
+     *  when a window finishes loading. It should have zero parameters and
+     *  no return value. This is not run if an error occurs.
      */
     constructor(session, entity_id, node_id,
                 module_name, data, x, y,
-                window_dependencies, custom_id) {
+                window_dependencies, custom_id,
+                width, height, ready_handler) {
         let index = 0;
         let id = undefined;
 
@@ -319,8 +342,9 @@ class Window {
         this.#being_resized = false;
         this.#collapsed = false;
         this.#last_focus = Date.now();
-        this.#dom = this.#createWindowDOM();
+        this.#dom = this.#createWindowDOM(width, height);
         this.#custom_title = undefined;
+        this.#ready_handler = ready_handler;
 
         if (window_dependencies != undefined &&
             window_dependencies.length > 0 &&
@@ -539,7 +563,7 @@ class Window {
     }
 
     // Private, not meant to be called by any external code.
-    #createWindowDOM() {
+    #createWindowDOM(width, height) {
         const window_header = `
 <div class="window_header">
   <span class="window_title"></span>
@@ -552,6 +576,14 @@ class Window {
     <title>Reset/Refresh contents</title>
     <path d="M480-160q-134 0-227-93t-93-227q0-134 93-227t227-93q69 0 132 28.5T720-690v-110h80v280H520v-80h168q-32-56-87.5-88T480-720q-100 0-170 70t-70 170q0 100
              70 170t170 70q77 0 139-44t87-116h84q-28 106-114 173t-196 67Z"/>
+  </svg>
+  <!-- This SVG is from Google Material Icons, licensing:
+       SPDX-FileCopyrightText: Google
+       SPDX-License-Identifier: Apache-2.0 -->
+  <svg id="share" xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" height="24px" width="24px"
+   class="window_share" onclick="">
+     <title>Share window</title>
+     <path d="M684-80q-48.33 0-82.17-33.83Q568-147.67 568-196q0-7.33 4.33-32l-293-171.33q-16.18 16.56-37.42 25.94Q220.67-364 196-364q-48.33 0-82.17-33.67Q80-431.33 80-480t33.83-82.33Q147.67-596 196-596q24 0 45 9.03T278-562l294.33-170q-2-7.67-3.16-15.5Q568-755.33 568-764q0-48.33 33.83-82.17Q635.67-880 684-880t82.17 33.83Q800-812.33 800-764t-33.83 82.17Q732.33-648 684-648q-23.52 0-44.09-8.83-20.58-8.84-36.58-23.84L307-513.33q2.67 7.66 3.83 16.16 1.17 8.5 1.17 16.84 0 8.33-.83 15.5-.84 7.16-2.84 14.83L604-280q16-15 36.4-23.5 20.39-8.5 43.7-8.5 48.57 0 82.23 33.83Q800-244.33 800-196t-33.83 82.17Q732.33-80 684-80Zm.02-66.67q20.98 0 35.15-14.19 14.16-14.19 14.16-35.16 0-20.98-14.19-35.15-14.19-14.16-35.16-14.16-20.98 0-35.15 14.19-14.16 14.19-14.16 35.16 0 20.98 14.19 35.15 14.19 14.16 35.16 14.16Zm-488-284q20.98 0 35.15-14.19 14.16-14.19 14.16-35.16 0-20.98-14.19-35.15-14.19-14.16-35.16-14.16-20.98 0-35.15 14.19-14.16 14.19-14.16 35.16 0 20.98 14.19 35.15 14.19 14.16 35.16 14.16Zm523.15-298.19q14.16-14.19 14.16-35.16 0-20.98-14.19-35.15-14.19-14.16-35.16-14.16-20.98 0-35.15 14.19-14.16 14.19-14.16 35.16 0 20.98 14.19 35.15 14.19 14.16 35.16 14.16 20.98 0 35.15-14.19ZM684-196ZM196-480Zm488-284Z"/>
   </svg>
   <!-- This SVG is from Google Material Icons, licensing:
        SPDX-FileCopyrightText: Google
@@ -610,12 +642,22 @@ class Window {
 
         root.find('.window_refresh').attr(
             'onclick', `Window.instances['${this.#id}'].onRefreshClick(event)`);
+        root.find('.window_share').attr(
+            'onclick', `Window.instances['${this.#id}'].onShareClick(event)`);
         root.find('.window_visibility').attr(
             'onclick', `Window.instances['${this.#id}'].onVisibilityClick(event)`);
         root.find('.window_edit_title').attr(
             'onclick', `Window.instances['${this.#id}'].onEditTitleClick(event)`);
         root.find('.window_close').attr(
             'onclick', `Window.instances['${this.#id}'].close(event)`);
+
+        if (width != undefined) {
+            root.css('width', width + 'px');
+        }
+
+        if (height != undefined) {
+            root.css('height', height + 'px');
+        }
 
         return root;
     }
@@ -628,6 +670,106 @@ class Window {
     }
 
     // Private, not meant to be called by any external code.
+    #editTitle(new_title) {
+        if (new_title == undefined || new_title === '') {
+            return;
+        }
+
+        if (this.#session == undefined || Window.isInCompactMode()) {
+            $('#' + this.#id + '_header').find('.window_title').text(new_title);
+            $('#' + this.#id + '_header').attr('title', new_title);
+        } else {
+            $('#' + this.#id + '_header').find('.window_title').text(
+                '[Session: ' + this.#session.label + '] ' +
+                    new_title);
+            $('#' + this.#id + '_header').attr('title',
+                                               '[Session: ' +
+                                               this.#session.label +
+                                               '] ' +
+                                               new_title);
+        }
+
+        this.#custom_title = new_title;
+    }
+
+    // Private, not meant to be called by any external code.
+    onShareClick(event) {
+        Window.stopPropagation(event);
+
+        let getName = () => {
+            return window.prompt(
+                "You're about to save the single window (along with its dependencies) for " +
+                    "opening later or sharing with others using the same Adaptyst Analyser instance.\n\n" +
+                    "This is called a single window arrangement: it is defined as your chosen window, " +
+                    "its dependencies if any, and " +
+                    "the session formally associated with the " +
+                    "window if any (note that a window related to multiple sessions isn't formally associated with " +
+                    "any session).\n\n" +
+                    "The window content is also saved if the content export is supported by a corresponding module.\n\n" +
+                    "What name would you like to give to your arrangement? It must not be empty.");
+        };
+
+        let name = getName();
+
+        if (name == undefined || name === "") {
+            return;
+        }
+
+        this.#dom.find('.window_share').addClass('disabled');
+        this.#dom.find('.window_share').attr('onclick', '');
+        this.showLoading();
+
+        let session_id = this.#session != undefined ? this.#session.id : undefined;
+        let windows = {};
+
+        let cur_x = 10;
+        let cur_y = 10;
+
+        let cur_dependencies = new Set(this.getDependencyObjects());
+        let all_dependencies = new Set(cur_dependencies);
+
+        while (cur_dependencies.size > 0) {
+            let new_dependencies = new Set();
+
+            for (const d of cur_dependencies) {
+                for (const wd of d.getDependencyObjects()) {
+                    new_dependencies.add(wd);
+                }
+            }
+
+            for (const d of new_dependencies) {
+                all_dependencies.add(d);
+            }
+
+            cur_dependencies = new_dependencies;
+        }
+
+        let instances = Array.from(all_dependencies);
+        instances.sort((a, b) => {
+            return a.getLastFocusTime() - b.getLastFocusTime();
+        });
+
+        for (const w of instances) {
+            windows[w.getId()] = w.serialize(cur_x, cur_y);
+
+            cur_x += 20;
+            cur_y += 20;
+        }
+
+        let arrangement = {
+            "session": session_id,
+            "main_window": this.serialize(cur_x, cur_y),
+            "other_windows": windows
+        };
+
+        window.alert(JSON.stringify(arrangement));
+
+        this.#dom.find('.window_share').removeClass('disabled');
+        this.#dom.find('.window_share').attr('onclick', `Window.instances['${this.#id}'].onShareClick(event)`);
+        this.hideLoading();
+    }
+
+    // Private, not meant to be called by any external code.
     onEditTitleClick(event) {
         Window.stopPropagation(event);
 
@@ -635,31 +777,15 @@ class Window {
 
         if (Window.isInCompactMode()) {
             title = window.prompt('Enter a new title for the window.',
-                                  this.#custom_title == undefined ?
-                                  $('#' + this.#id + '_header').find('.window_title').text()
-                                  : this.#custom_title);
+                                  this.getCurrentTitle());
         } else {
             title = window.prompt('Enter a new title for the window. ' +
                                   'The session prefix will remain ' +
                                   'unchanged if present.',
-                                  this.#custom_title == undefined ?
-                                  this.getTitle() : this.#custom_title);
+                                  this.getCurrentTitle());
         }
 
-        if (title == undefined || title === '') {
-            return;
-        }
-
-        if (this.#session == undefined || Window.isInCompactMode()) {
-            $('#' + this.#id + '_header').find('.window_title').text(title);
-            $('#' + this.#id + '_header').attr('title', title);
-        } else {
-            $('#' + this.#id + '_header').find('.window_title').text(
-                '[Session: ' + this.#session.label + '] ' +
-                    title);
-        }
-
-        this.#custom_title = title;
+        this.#editTitle(title);
     }
 
     /**
@@ -925,6 +1051,9 @@ class Window {
         this.#loading_jquery.prependTo(this.#dom.find('.window_content'));
         this.#loading_jquery.show();
         $('#' + this.#id + '_header').find('.window_refresh').addClass('disabled');
+        $('#' + this.#id + '_header').find('.window_share').addClass('disabled');
+        $('#' + this.#id + '_header').find('.window_refresh').attr('onclick', '');
+        $('#' + this.#id + '_header').find('.window_share').attr('onclick', '');
     }
 
     /**
@@ -933,6 +1062,16 @@ class Window {
     hideLoading() {
         this.#loading_jquery.hide();
         $('#' + this.#id + '_header').find('.window_refresh').removeClass('disabled');
+        $('#' + this.#id + '_header').find('.window_share').removeClass('disabled');
+        $('#' + this.#id + '_header').find('.window_refresh').attr('onclick',
+                                                                   `Window.instances['${this.#id}'].onRefreshClick(event)`);
+        $('#' + this.#id + '_header').find('.window_share').attr('onclick',
+                                                                 `Window.instances['${this.#id}'].onShareClick(event)`);
+
+        if (this.#ready_handler != undefined) {
+            this.#ready_handler();
+            this.#ready_handler = undefined;
+        }
     }
 
     // Private, not meant to be called by any external code.
@@ -948,10 +1087,10 @@ class Window {
             let title = undefined;
 
             if (this.#session == undefined || Window.isInCompactMode()) {
-                title = this.getTitle();
+                title = this.getTitle(data);
             } else {
                 title = '[Session: ' + this.#session.label + '] ' +
-                    this.getTitle();
+                    this.getTitle(data);
 
             }
 
@@ -959,10 +1098,7 @@ class Window {
                 this.#dom.find('.window_header');
 
             header.find('.window_title').text(title);
-
-            if (Window.isInCompactMode()) {
-                header.attr('title', title);
-            }
+            header.attr('title', title);
         }
 
         this.showLoading();
@@ -988,13 +1124,30 @@ class Window {
     }
 
     /**
-     *  Gets the title of a window.
-
+     *  Gets the expected title of a window. A user is free
+     *  to change it by using the "edit title" feature.
+     *
+     *  @param [data] Arbitrary data passed to the constructor, e.g.
+     *  a dictionary.
+     *
      *  @abstract
+     *  @return {String} Expected title of a window.
+     */
+    getTitle(data) {
+        throw new Error('This is an abstract method!');
+    }
+
+    /**
+     *  Gets the title of a window.
+     *
      *  @return {String} Title of a window.
      */
-    getTitle() {
-        throw new Error('This is an abstract method!');
+    getCurrentTitle() {
+        if (this.#custom_title == undefined) {
+            return this.getTitle(this.#constructor_data);
+        } else {
+            return this.#custom_title;
+        }
     }
 
     /**
@@ -1118,7 +1271,10 @@ class Window {
             "dependencies": this.getDependencies(),
             "collapsed": this.#collapsed,
             "custom_title": this.#custom_title,
-            "data": this._exportData()
+            "data": this._exportData(),
+            "width": Window.isInCompactMode() ? undefined : this.#dom.outerWidth(),
+            "height": Window.isInCompactMode() ? undefined :
+                (this.#collapsed ? this.#last_height : this.#dom.outerHeight())
         });
     }
 
@@ -1215,10 +1371,10 @@ class Window {
             this.#last_height = this.#dom.outerHeight();
             this.#dom.css('min-height', '0');
             this.#dom.css('resize', 'horizontal');
-            this.#dom.height(window_header.outerHeight());
+            this.#dom.css('height', window_header.outerHeight() + 'px');
         } else {
             this.#collapsed = false;
-            this.#dom.height(this.#last_height);
+            this.#dom.css('height', this.#last_height + 'px');
             this.#dom.css('min-height', this.#min_height);
             this.#dom.css('resize', 'both');
             this.#dom.css('opacity', '');
@@ -1416,6 +1572,151 @@ class Menu {
 }
 
 // Private, not meant to be used by any external code.
+class LinkWindow extends Window {
+    getType() {
+        return 'link';
+    }
+
+    getContentCode() {
+        return `
+<div class="link_header">
+  <input class="link_box" type="text" readonly />
+  <!-- This SVG is from Google Material Icons, licensing:
+       SPDX-FileCopyrightText: Google
+       SPDX-License-Identifier: Apache-2.0 -->
+  <a href="" target="_blank" class="link_open">
+    <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#000000">
+      <title>Open in new browser tab/window</title>
+      <path d="M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h280v80H200v560h560v-280h80v280q0 33-23.5 56.5T760-120H200Zm188-212-56-56 372-372H560v-80h280v280h-80v-144L388-332Z"/>
+    </svg>
+  </a>
+</div>
+<div class="link_setting">
+  <input type="checkbox" name="link_compact" class="link_compact" />
+  <label title="Suitable for tablets, smaller desktop screens, and embedding in websites. May be *not* suitable for phones." class="help_pointer">Compact mode</label>
+</div>
+<div class="link_compact_setting">
+  <input type="checkbox" name="link_hide_header" class="link_hide_header" />
+  <label title="This saves space. A user can always toggle the header if needed." class="help_pointer">Hide header by default</label>
+</div>
+<div class="link_compact_setting">
+  <input type="checkbox" name="link_hide_footer" class="link_hide_footer" />
+  <label title="This saves space. A user can always toggle the footer if needed." class="help_pointer">Hide footer by default</label>
+</div>
+`;
+    }
+
+    startResize() {
+        return false;
+    }
+
+    finishResize() {
+
+    }
+
+    getTitle(data) {
+        let title = 'Link to share for ';
+
+        if ('session' in data) {
+            title += 'session: ' +
+                $('#results_combobox').find("[value='" + data.session + "']").attr('data-label');
+        } else if ('arrgmt' in data) {
+            title += 'arrangement';
+
+            if ('arrgmt_name' in data) {
+                title += ': ' + data.arrgmt_name;
+            }
+        } else {
+            return 'Link to share';
+        }
+
+        return title;
+    }
+
+    prepareRefresh() {
+
+    }
+
+    prepareClose() {
+
+    }
+
+    _setup(data, existing_window) {
+        let url_txt = './?';
+
+        if ('session' in data) {
+            url_txt += 'session=' + data.session;
+        } else if ('arrgmt' in data) {
+            url_txt += 'arrgmt=' + data.arrgmt;
+        }
+
+        if ('compact' in data && data.compact) {
+            url_txt += '&compact=1';
+            this.getContent().find('.link_compact').prop('checked', true);
+
+            if ('hide_header' in data && data.hide_header) {
+                url_txt += '&hide_header=1';
+                this.getContent().find('.link_hide_header').prop('checked', true);
+            }
+
+            if ('hide_footer' in data && data.hide_footer) {
+                url_txt += '&hide_footer=1';
+                this.getContent().find('.link_hide_footer').prop('checked', true);
+            }
+        } else {
+            this.getContent().find('.link_hide_header').prop('disabled', true);
+            this.getContent().find('.link_hide_footer').prop('disabled', true);
+        }
+
+        let url = new URL(url_txt, document.baseURI);
+
+        this.getContent().find('.link_box').val(url.href);
+        this.getContent().find('.link_box').select();
+        this.getContent().find('.link_open').attr('href', url.href);
+
+        let refresh = () => {
+            let url_txt = './?';
+
+            if ('session' in data) {
+                url_txt += 'session=' + data.session;
+            } else if ('arrgmt' in data) {
+                url_txt += 'arrgmt=' + data.arrgmt;
+            }
+
+            if (this.getContent().find('.link_compact').prop('checked')) {
+                url_txt += '&compact=1';
+
+                this.getContent().find('.link_hide_header').prop('disabled', false);
+                this.getContent().find('.link_hide_footer').prop('disabled', false);
+
+                if (this.getContent().find('.link_hide_header').prop('checked')) {
+                    url_txt += '&hide_header=1';
+                }
+
+                if (this.getContent().find('.link_hide_footer').prop('checked')) {
+                    url_txt += '&hide_footer=1';
+                }
+            } else {
+                this.getContent().find('.link_hide_header').prop('disabled', true);
+                this.getContent().find('.link_hide_footer').prop('disabled', true);
+            }
+
+            let url = new URL(url_txt, document.baseURI);
+
+            this.getContent().find('.link_box').val(url.href);
+            this.getContent().find('.link_box').select();
+            this.getContent().find('.link_open').attr('href', url.href);
+        };
+
+        this.getContent().find('.link_compact').on('change', refresh);
+        this.getContent().find('.link_hide_header').on('change', refresh);
+        this.getContent().find('.link_hide_footer').on('change', refresh);
+
+        this.hideLoading();
+    }
+}
+
+// Private, not meant to be used by any external code.
 class SettingsWindow extends Window {
     #current_backend;
 
@@ -1512,6 +1813,165 @@ class SettingsWindow extends Window {
                 this.#current_backend.show();
             });
         });
+        this.hideLoading();
+    }
+}
+
+class OpenArrangementWindow extends Window {
+    getType() {
+        return 'open_arrangement';
+    }
+
+    getContentCode() {
+        return `
+<!-- All SVGs used in this initial window code are from Google Material Icons, licensing:
+     SPDX-FileCopyrightText: Google
+     SPDX-License-Identifier: Apache-2.0 -->
+<div class="open_arrangement_header">
+  <div class="open_arrangement_page">
+    <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#000000"
+     class="pointer" onclick="Window.instances['${this.getId()}'].onGoToFirstPageClick(event)">
+      <title>Go to the first page</title>
+      <path d="M440-240 200-480l240-240 56 56-183 184 183 184-56 56Zm264 0L464-480l240-240 56 56-183 184 183 184-56 56Z"/>
+    </svg>
+    <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#000000"
+     class="pointer" onclick="Window.instances['${this.getId()}'].onGoToPrevPageClick(event)">
+      <title>Go to the previous page</title>
+      <path d="M560-240 320-480l240-240 56 56-184 184 184 184-56 56Z"/>
+    </svg>
+    <span class="open_arrangement_cur_page">Page 1 of 5</span>
+    <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#000000"
+     class="pointer" onclick="Window.instances['${this.getId()}'].onGoToNextPageClick(event)">
+      <title>Go to the next page</title>
+      <path d="M504-480 320-664l56-56 240 240-240 240-56-56 184-184Z"/>
+    </svg>
+    <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#000000"
+     class="pointer" onclick="Window.instances['${this.getId()}'].onGoToLastPageClick(event)">
+      <title>Go to the last page</title>
+      <path d="M383-480 200-664l56-56 240 240-240 240-56-56 183-184Zm264 0L464-664l56-56 240 240-240 240-56-56 183-184Z"/>
+    </svg>
+  </div>
+  <div class="open_arrangement_table_actions">
+    <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#000000"
+     class="pointer" onclick="Window.instances['${this.getId()}'].onSearchClick(event)">
+      <title>Search</title>
+      <path d="M784-120 532-372q-30 24-69 38t-83 14q-109 0-184.5-75.5T120-580q0-109 75.5-184.5T380-840q109 0 184.5 75.5T640-580q0 44-14 83t-38 69l252 252-56 56ZM380-400q75 0 127.5-52.5T560-580q0-75-52.5-127.5T380-760q-75 0-127.5 52.5T200-580q0 75 52.5 127.5T380-400Z"/>
+    </svg>
+    <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#000000"
+     class="pointer" onclick="Window.instances['${this.getId()}'].onFilterClick(event)">
+      <title>Filter types</title>
+      <path d="M440-160q-17 0-28.5-11.5T400-200v-240L168-736q-15-20-4.5-42t36.5-22h560q26 0 36.5 22t-4.5 42L560-440v240q0 17-11.5 28.5T520-160h-80Zm40-308 198-252H282l198 252Zm0 0Z"/>
+    </svg>
+    <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#000000"
+     class="pointer" onclick="Window.instances['${this.getId()}'].onSortByClick(event)">
+      <title>Sort by...</title>
+      <path d="M120-240v-80h240v80H120Zm0-200v-80h480v80H120Zm0-200v-80h720v80H120Z"/>
+    </svg>
+  </div>
+</div>
+<table class="open_arrangement_table">
+  <tr>
+    <th>Name</th>
+    <th>Type</th>
+    <th>Last update</th>
+    <th>Actions</th>
+  </tr>
+</table>`;
+    }
+
+    // Private, not meant to be called by any external code.
+    onGoToFirstPageClick(event) {
+        console.log('go to first page');
+    }
+
+    // Private, not meant to be called by any external code.
+    onGoToPrevPageClick(event) {
+        console.log('go to prev page');
+    }
+
+    // Private, not meant to be called by any external code.
+    onGoToNextPageClick(event) {
+        console.log('go to next page');
+    }
+
+    // Private, not meant to be called by any external code.
+    onGoToLastPageClick(event) {
+        console.log('go to last page');
+    }
+
+    // Private, not meant to be called by any external code.
+    onSearchClick(event) {
+        console.log('search');
+    }
+
+    // Private, not meant to be called by any external code.
+    onFilterClick(event) {
+        let options = [
+            ['Show W only', [undefined, () => {
+
+            }]],
+            ['Show SW only', [undefined, () => {
+
+            }]],
+            ['Show both W and SW', [undefined, () => {
+
+            }]]
+        ];
+
+        Menu.createMenu('open_arrangement_filter_menu',
+                        event.pageX,
+                        event.pageY,
+                        options);
+
+        Window.stopPropagation(event);
+    }
+
+    // Private, not meant to be called by any external code.
+    onSortByClick(event) {
+        let options = [
+            ['Sort by name (asc.)', [undefined, () => {
+
+            }]],
+            ['Sort by name (desc.)', [undefined, () => {
+
+            }]],
+            ['Sort by last update (asc.)', [undefined, () => {
+
+            }]],
+            ['Sort by last update (desc.)', [undefined, () => {
+
+            }]]
+        ];
+
+        Menu.createMenu('open_arrangement_sort_by_menu',
+                        event.pageX,
+                        event.pageY,
+                        options);
+
+        Window.stopPropagation(event);
+    }
+
+    startResize() {
+        return false;
+    }
+
+    finishResize() {
+
+    }
+
+    getTitle() {
+        return 'Open an arrangement';
+    }
+
+    prepareRefresh() {
+
+    }
+
+    prepareClose() {
+
+    }
+
+    _setup(data, existing_window) {
         this.hideLoading();
     }
 }
@@ -1737,32 +2197,41 @@ function loadCurrentSession() {
 }
 
 // Private, not meant to be called by any external code.
+function onOpenClick(event) {
+    new OpenArrangementWindow(undefined, undefined, undefined, undefined, {});
+}
+
+// Private, not meant to be called by any external code.
 function openSessionLinkDialogs() {
-    let id = $('#results_combobox option:selected').attr('value');
-    let url = new URL('./?session=' + id, document.baseURI);
-    let open_compact = window.prompt(
-        "Here's the URL you can share with others to let them quickly " +
-            "open your session and explore it themselves.\n\n" +
-            "You can also get the compact mode URL by clicking OK. " +
-            "Compact mode is " +
-            "suitable for tablets, smaller desktop " +
-            "screens, and embedding in websites. This does *not* include phones.",
-        url.href);
+    new LinkWindow(undefined, undefined, undefined, undefined, {
+        'session': $('#results_combobox option:selected').attr('value'),
+        'compact': false
+    });
+    // let id = $('#results_combobox option:selected').attr('value');
+    // let url = new URL('./?session=' + id, document.baseURI);
+    // let open_compact = window.prompt(
+    //     "Here's the URL you can share with others to let them quickly " +
+    //         "open your session and explore it themselves.\n\n" +
+    //         "You can also get the compact mode URL by clicking OK. " +
+    //         "Compact mode is " +
+    //         "suitable for tablets, smaller desktop " +
+    //         "screens, and embedding in websites. This does *not* include phones.",
+    //     url.href);
 
-    if (open_compact != undefined) {
-        url = new URL('./?compact=1&session=' + id, document.baseURI);
-        let open_hide_footer = window.prompt(
-            "Here's the requested compact mode URL you can share with others.\n\n" +
-                "You can also get the compact mode URL, where the footer is hidden " +
-                "by default to make more space (it can be still be toggled by users " +
-                "if needed). Click OK if you want this.", url.href);
+    // if (open_compact != undefined) {
+    //     url = new URL('./?compact=1&session=' + id, document.baseURI);
+    //     let open_hide_footer = window.prompt(
+    //         "Here's the requested compact mode URL you can share with others.\n\n" +
+    //             "You can also get the compact mode URL, where the footer is hidden " +
+    //             "by default to make more space (it can be still be toggled by users " +
+    //             "if needed). Click OK if you want this.", url.href);
 
-        if (open_hide_footer != undefined) {
-            url = new URL('./?compact=1&hide_footer=1&session=' + id, document.baseURI);
-            window.prompt("Here's the requested compact mode URL with the footer " +
-                          "hidden by default.", url.href);
-        }
-    }
+    //     if (open_hide_footer != undefined) {
+    //         url = new URL('./?compact=1&hide_footer=1&session=' + id, document.baseURI);
+    //         window.prompt("Here's the requested compact mode URL with the footer " +
+    //                       "hidden by default.", url.href);
+    //     }
+    // }
 }
 
 // Private, not meant to be called by any external code.
@@ -1782,6 +2251,11 @@ function saveWindowArrangement() {
     if (name == undefined || name === "") {
         return;
     }
+
+    $('#share').removeClass('pointer');
+    $('#share').addClass('disabled_wait');
+    $('#share').attr('onclick', '');
+    $('html').css('cursor', 'progress');
 
     let session_id = $('#results_combobox option:selected').attr('value');
     let camera_state = Window.system_graph_view.getCamera().getState();
@@ -1817,7 +2291,7 @@ function onSessionRefreshClick(event) {
 
 // Private, not meant to be called by any external code.
 function onSettingsClick(event) {
-    new SettingsWindow(undefined, undefined, undefined, {});
+    new SettingsWindow(undefined, undefined, undefined, undefined, {});
 }
 
 // Private, not meant to be called by any external code.
@@ -1833,6 +2307,26 @@ function onShareClick(event) {
                     options);
 
     Window.stopPropagation(event);
+}
+
+// Private, not meant to be called by any external code.
+function onShowHeaderClick(event) {
+    $('#header_container').removeClass('header_hidden');
+    $('#header_container').addClass('header_shown');
+
+    if ($('#graph').is(':visible')) {
+        Window.system_graph_view.refresh();
+    }
+}
+
+// Private, not meant to be called by any external code.
+function onHideHeaderClick(event) {
+    $('#header_container').removeClass('header_shown');
+    $('#header_container').addClass('header_hidden');
+
+    if ($('#graph').is(':visible')) {
+        Window.system_graph_view.refresh();
+    }
 }
 
 // Private, not meant to be called by any external code.

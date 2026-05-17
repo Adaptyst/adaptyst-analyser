@@ -38,7 +38,8 @@ html {
     align-items:center;
 }
 
-.window_refresh, .window_visibility, .window_edit_title, .window_close {
+.window_refresh, .window_share,
+.window_visibility, .window_edit_title, .window_close {
     min-width:24px;
     margin-left:5px;
 }
@@ -57,4 +58,5 @@ html {
     max-width:95%;
     min-width:250px;
     min-height:50px;
+    box-sizing:border-box;
 }

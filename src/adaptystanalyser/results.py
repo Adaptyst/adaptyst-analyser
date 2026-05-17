@@ -195,11 +195,16 @@ class PerformanceAnalysisResults:
                     self._used_module_vers[entity_name][node][name] = \
                         mod_meta['version']
 
-        if (self._path / 'entity_colours.json').exists():
-            with (self._path / 'entity_colours.json').open(mode='r') as f:
-                self._entity_colours = json.load(f)
-        else:
-            self._entity_colours = {}
+        self._entity_colours = {}
+
+        # TODO: Move entity colour assinging to Adaptyst itself or
+        # remove it altogether
+
+        # if (self._path / 'entity_colours.json').exists():
+        #     with (self._path / 'entity_colours.json').open(mode='r') as f:
+        #         self._entity_colours = json.load(f)
+        # else:
+        #     self._entity_colours = {}
 
         self._entity_exit_codes = {}
 
@@ -219,8 +224,11 @@ class PerformanceAnalysisResults:
     def _set_entity_colour(self, entity, colour):
         self._entity_colours[entity] = colour
 
-        with (self._path / 'entity_colours.json').open(mode='w') as f:
-            f.write(json.dumps(self._entity_colours))
+        # TODO: Move entity colour assinging to Adaptyst itself or
+        # remove it altogether
+
+        # with (self._path / 'entity_colours.json').open(mode='w') as f:
+        #     f.write(json.dumps(self._entity_colours))
 
     def get_system_graph(self):
         used_colours = set()
