@@ -224,6 +224,17 @@ object {
     left:0;
 }
 
+.loading_no_flex {
+    text-align:center;
+    position:absolute;
+    width:100%;
+    height:100%;
+    z-index:10000;
+    background-color:white;
+    top:0;
+    left:0;
+}
+
 .loading_image {
     flex-grow:1;
 }

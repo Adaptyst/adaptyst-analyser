@@ -97,7 +97,7 @@ class Arrangement(Base):
                         add_session(w.get('constr', [None])[0])
                 else:
                     for w in data_decoded.get('windows', {}).values():
-                        add_session(w.get('constr', [None]))[0]
+                        add_session(w.get('constr', [None])[0])
 
                 session.commit()
             except Exception as e:
@@ -142,7 +142,7 @@ class Arrangement(Base):
             arrgmt.last_update = datetime.now(timezone.utc)
             session.commit()
 
-            return '', 200
+            return '{}', 200
 
     def req_delete(data):
         if 'name' not in data:
@@ -163,19 +163,29 @@ class Arrangement(Base):
             if not arrgmt.check_token(data['token']):
                 return '', 403
 
+            session.execute(sql.delete(Session).where(
+                Session.a_id == arrgmt.a_id))
+
             session.delete(arrgmt)
             session.commit()
 
-            return '', 200
+            return '{}', 200
 
     def req_get(data, storage_path: Path):
-        if 'name' not in data:
+        if ('name' not in data and 'id' not in data) or \
+           ('name' in data and 'id' in data):
             return '', 401
 
         with orm.Session(Base._engine) as session:
-            results = session.scalars(
-                sql.select(Arrangement).where(
-                    Arrangement.name == data['name']))
+            if 'id' in data:
+                results = session.scalars(
+                    sql.select(Arrangement).where(
+                        Arrangement.a_id == data['id']))
+            else:
+                results = session.scalars(
+                    sql.select(Arrangement).where(
+                        Arrangement.name == data['name']))
+
             arrgmt = results.first()
 
             if arrgmt is None:

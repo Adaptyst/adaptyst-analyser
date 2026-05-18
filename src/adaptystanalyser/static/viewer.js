@@ -788,8 +788,6 @@ class Window {
                 "other_windows": windows
             };
 
-            window.alert(JSON.stringify(arrangement));
-
             Window.sendArrgmtRequest({
                 'type': 'save',
                 'name': name,
@@ -1110,32 +1108,38 @@ class Window {
      *  Shows the loading indicator in a window.
      */
     showLoading() {
-        this.#loading_jquery = $('#loading').clone();
-        this.#loading_jquery.removeAttr('id');
-        this.#loading_jquery.attr('class', 'loading');
-        this.#loading_jquery.prependTo(this.#dom.find('.window_content'));
-        this.#loading_jquery.show();
-        $('#' + this.#id + '_header').find('.window_refresh').addClass('disabled');
-        $('#' + this.#id + '_header').find('.window_share').addClass('disabled');
-        $('#' + this.#id + '_header').find('.window_refresh').attr('onclick', '');
-        $('#' + this.#id + '_header').find('.window_share').attr('onclick', '');
+        if (this.#loading_jquery == undefined) {
+            this.#loading_jquery = $('#loading').clone();
+            this.#loading_jquery.removeAttr('id');
+            this.#loading_jquery.attr('class', 'loading');
+            this.#loading_jquery.prependTo(this.#dom.find('.window_content'));
+            this.#loading_jquery.show();
+            $('#' + this.#id + '_header').find('.window_refresh').addClass('disabled');
+            $('#' + this.#id + '_header').find('.window_share').addClass('disabled');
+            $('#' + this.#id + '_header').find('.window_refresh').attr('onclick', '');
+            $('#' + this.#id + '_header').find('.window_share').attr('onclick', '');
+        }
     }
 
     /**
      *  Hides the loading indicator in a window.
      */
     hideLoading() {
-        this.#loading_jquery.hide();
-        $('#' + this.#id + '_header').find('.window_refresh').removeClass('disabled');
-        $('#' + this.#id + '_header').find('.window_share').removeClass('disabled');
-        $('#' + this.#id + '_header').find('.window_refresh').attr('onclick',
-                                                                   `Window.instances['${this.#id}'].onRefreshClick(event)`);
-        $('#' + this.#id + '_header').find('.window_share').attr('onclick',
-                                                                 `Window.instances['${this.#id}'].onShareClick(event)`);
+        if (this.#loading_jquery != undefined) {
+            this.#loading_jquery.remove();
+            this.#loading_jquery = undefined;
 
-        if (this.#ready_handler != undefined) {
-            this.#ready_handler();
-            this.#ready_handler = undefined;
+            $('#' + this.#id + '_header').find('.window_refresh').removeClass('disabled');
+            $('#' + this.#id + '_header').find('.window_share').removeClass('disabled');
+            $('#' + this.#id + '_header').find('.window_refresh').attr('onclick',
+                                                                       `Window.instances['${this.#id}'].onRefreshClick(event)`);
+            $('#' + this.#id + '_header').find('.window_share').attr('onclick',
+                                                                     `Window.instances['${this.#id}'].onShareClick(event)`);
+
+            if (this.#ready_handler != undefined) {
+                this.#ready_handler();
+                this.#ready_handler = undefined;
+            }
         }
     }
 
@@ -2313,7 +2317,7 @@ class OpenArrangementWindow extends Window {
             } else {
                 window.alert('Could not save the new name!\n\n' +
                              'Error type: ' + txt + '/"' + error +
-                             + '"/' + xhr.status);
+                             '"/' + xhr.status);
             }
 
             this.hideLoading();
@@ -2363,7 +2367,7 @@ class OpenArrangementWindow extends Window {
         if (isNaN(page)) {
             page = 1;
         }
-        
+
         Window.sendArrgmtRequest({
             'type': 'list',
             'sort': this.getContent().attr('data-sort'),
@@ -2505,7 +2509,7 @@ function openSystemGraph() {
 }
 
 // Private, not meant to be called by any external code.
-function loadCurrentSession() {
+function loadCurrentSession(ready_handler) {
     let versionLessThan = (a, b) => {
         for (var i = 0; i < Math.min(a.length, b.length); i++) {
             if (a[i] > b[i]) {
@@ -2687,6 +2691,10 @@ function loadCurrentSession() {
             $('#share').removeClass('disabled');
             $('#share').addClass('pointer');
             $('#share').attr('onclick', 'onShareClick(event)');
+
+            if (ready_handler != undefined) {
+                ready_handler();
+            }
         }).fail(ajax_obj => {
             $('#loading').hide();
 
@@ -2850,6 +2858,26 @@ function saveWindowArrangement() {
 }
 
 // Private, not meant to be called by any external code.
+function loadArrangement(data) {
+    let openWindows = () => {
+        $('#arrgmt_loading').remove();
+    };
+
+    if (data.session != undefined) {
+        $('#results_combobox').val(data.session);
+        loadCurrentSession(() => {
+            if (data.camera_state != undefined) {
+                Window.system_graph_view.getCamera().setState(data.camera_state);
+            }
+
+            openWindows();
+        });
+    } else {
+        openWindows();
+    }
+}
+
+// Private, not meant to be called by any external code.
 function onSessionRefreshClick(event) {
     loadCurrentSession();
 }
@@ -2915,7 +2943,31 @@ function onHideFooterClick(event) {
 }
 
 $(document).ready(() => {
-    if ($('body').attr('data-session') != undefined) {
+    if ($('body').attr('data-arrgmt') != undefined) {
+        let id = $('body').attr('data-arrgmt');
+        Window.sendArrgmtRequest({
+            'type': 'get',
+            'id': id
+        }, (data, status) => {
+            loadArrangement(data);
+        }, (xhr, txt, error) => {
+            if (xhr.status === 404) {
+                window.alert('The arrangement with ID ' + id +
+                             "can't be found!");
+            } else if (xhr.status === 422) {
+                window.alert('The arrangement with ID ' + id +
+                             ' refers to at least one performance ' +
+                             'analysis session which is not present!\n\n' +
+                             'The first performance analysis session found ' +
+                             'to be not present: ' + txt);
+            } else {
+                window.alert('Could not load the arrangement with ID ' +
+                             id + '!\n\n' +
+                             'Error type: ' + error + '/"' +
+                             txt + '"/' + xhr.status);
+            }
+        });
+    } else if ($('body').attr('data-session') != undefined) {
         $('#results_combobox').val($('body').attr('data-session'));
         loadCurrentSession();
     }

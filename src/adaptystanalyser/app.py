@@ -127,14 +127,18 @@ def main():
     ids = PerformanceAnalysisResults.get_all_folders(
         app.config['PERFORMANCE_ANALYSIS_STORAGE'])
 
-    session = request.values.get('session', None)
+    arrgmt = request.values.get('arrgmt', None)
+    session = None
 
-    if session is not None and \
-       session not in map(lambda x: x.value, ids):
-        session = None
+    if arrgmt is None:
+        session = request.values.get('session', None)
+
+        if session is not None and \
+           session not in map(lambda x: x.value, ids):
+            session = None
 
     if request.values.get('compact', False) and \
-       session is None:
+       (session is None and arrgmt is None):
         code = 400
     else:
         code = 200
@@ -151,5 +155,6 @@ def main():
         min_mod_vers=json.dumps(min_mod_vers),
         compact=request.values.get('compact', False),
         session=session,
+        arrgmt=arrgmt,
         hide_header=request.values.get('hide_header', False),
         hide_footer=request.values.get('hide_footer', False)), code
