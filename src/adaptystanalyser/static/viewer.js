@@ -189,14 +189,16 @@ class Window {
     }
 
     /**
-     *  Creates a window from a JSON string produced by `serialize()`.
+     *  Creates a window from a JSON-able dictionary produced by `serialize()`
+     *  or an equivalent JSON string.
+     *
      *  The resulting window object can be accessed in Window.instances
      *  using the ID stored in the JSON string under "id".
      *
      *  @static
      */
     static deserialize(json) {
-        let obj = JSON.parse(json);
+        let obj = json instanceof String ? JSON.parse(json) : json;
 
         import('./modules/' + obj.module + '/backend.js')
             .then(backend => {
@@ -234,6 +236,18 @@ class Window {
                 window.alert('Could not load module ' + obj.module + '! ' +
                              'Are you sure it is installed?');
             });
+    }
+
+    // Private, should not be called by any external code.
+    static sendArrgmtRequest(req_data, done_func, fail_func) {
+        $.ajax({
+            url: '/arrgmt',
+            method: 'POST',
+            dataType: 'json',
+            data: req_data
+        }).done((data, status, xhr) => {
+            done_func(data, status);
+        }).fail(fail_func);
     }
 
     #id;
@@ -719,50 +733,101 @@ class Window {
         this.#dom.find('.window_share').attr('onclick', '');
         this.showLoading();
 
-        let session_id = this.#session != undefined ? this.#session.id : undefined;
-        let windows = {};
+        Window.sendArrgmtRequest({
+            'type': 'check_name',
+            'name': name
+        }, (data, status) => {
+            if (data.exists) {
+                window.alert('The arrangement "' + name + '" already exists!');
+                this.#dom.find('.window_share').removeClass('disabled');
+                this.#dom.find('.window_share').attr('onclick', `Window.instances['${this.#id}'].onShareClick(event)`);
+                this.hideLoading();
+                return;
+            }
 
-        let cur_x = 10;
-        let cur_y = 10;
+            let session_id = this.#session != undefined ? this.#session.id : undefined;
+            let windows = {};
 
-        let cur_dependencies = new Set(this.getDependencyObjects());
-        let all_dependencies = new Set(cur_dependencies);
+            let cur_x = 10;
+            let cur_y = 10;
 
-        while (cur_dependencies.size > 0) {
-            let new_dependencies = new Set();
+            let cur_dependencies = new Set(this.getDependencyObjects());
+            let all_dependencies = new Set(cur_dependencies);
 
-            for (const d of cur_dependencies) {
-                for (const wd of d.getDependencyObjects()) {
-                    new_dependencies.add(wd);
+            while (cur_dependencies.size > 0) {
+                let new_dependencies = new Set();
+
+                for (const d of cur_dependencies) {
+                    for (const wd of d.getDependencyObjects()) {
+                        new_dependencies.add(wd);
+                    }
                 }
+
+                for (const d of new_dependencies) {
+                    all_dependencies.add(d);
+                }
+
+                cur_dependencies = new_dependencies;
             }
 
-            for (const d of new_dependencies) {
-                all_dependencies.add(d);
+            let instances = Array.from(all_dependencies);
+            instances.sort((a, b) => {
+                return a.getLastFocusTime() - b.getLastFocusTime();
+            });
+
+            for (const w of instances) {
+                windows[w.getId()] = w.serialize(cur_x, cur_y);
+
+                cur_x += 20;
+                cur_y += 20;
             }
 
-            cur_dependencies = new_dependencies;
-        }
+            let arrangement = {
+                "session": session_id,
+                "main_window": this.serialize(cur_x, cur_y),
+                "other_windows": windows
+            };
 
-        let instances = Array.from(all_dependencies);
-        instances.sort((a, b) => {
-            return a.getLastFocusTime() - b.getLastFocusTime();
+            window.alert(JSON.stringify(arrangement));
+
+            Window.sendArrgmtRequest({
+                'type': 'save',
+                'name': name,
+                'data': JSON.stringify(arrangement)
+            }, (data, status) => {
+                window.prompt('The arrangement "' + name + '" has been ' +
+                              'saved successfully!\n\n' +
+                              "Here's the auth token for changing the " +
+                              "arrangement name or deleting the arrangement. " +
+                              "You'll see it only once, save it in a safe place.",
+                              data.token);
+
+                this.#dom.find('.window_share').removeClass('disabled');
+                this.#dom.find('.window_share').attr('onclick', `Window.instances['${this.#id}'].onShareClick(event)`);
+                this.hideLoading();
+
+                new LinkWindow(undefined, undefined, undefined, undefined, {
+                    'arrgmt': data.id,
+                    'name': name
+                });
+            }, (xhr, txt, error) => {
+                window.alert('The arrangement "' + name + '" could not be saved ' +
+                             'due to an error! (save stage, ' +
+                             'error type: ' + txt + '/"' + error + '"/' + xhr.status + ')');
+
+                this.#dom.find('.window_share').removeClass('disabled');
+                this.#dom.find('.window_share').attr('onclick', `Window.instances['${this.#id}'].onShareClick(event)`);
+                this.hideLoading();
+            });
+        }, (xhr, txt, error) => {
+            window.alert('The arrangement "' + name + '" could not be saved ' +
+                         'due to an error! (check name stage, ' +
+                         'error type: ' + txt + '/"' + error + '"/' + xhr.status + ')');
+
+            this.#dom.find('.window_share').removeClass('disabled');
+            this.#dom.find('.window_share').attr('onclick', `Window.instances['${this.#id}'].onShareClick(event)`);
+            this.hideLoading();
         });
-
-        for (const w of instances) {
-            windows[w.getId()] = w.serialize(cur_x, cur_y);
-
-            cur_x += 20;
-            cur_y += 20;
-        }
-
-        let arrangement = {
-            "session": session_id,
-            "main_window": this.serialize(cur_x, cur_y),
-            "other_windows": windows
-        };
-
-        window.alert(JSON.stringify(arrangement));
 
         this.#dom.find('.window_share').removeClass('disabled');
         this.#dom.find('.window_share').attr('onclick', `Window.instances['${this.#id}'].onShareClick(event)`);
@@ -1212,7 +1277,7 @@ class Window {
      *  for saving the window for opening later or sharing with
      *  other users of the same Adaptyst Analyser instance.
      *
-     *  The return format is a JSON string in the following form:
+     *  The return format is a JSON-able dictionary in the following form:
      *  ```
      *  {
      *    "id": <window ID>,
@@ -1235,7 +1300,7 @@ class Window {
      *  @param {int} [y] y-part of the initial upper-left corner position
      *  of the window in case it cannot be extracted automatically (e.g.
      *  due to being in the compact mode).
-     *  @return Window serialised in form of a JSON string.
+     *  @return Window serialised in form of a JSON-able dictionary.
      */
     serialize(x, y) {
         if (x == undefined) {
@@ -1258,7 +1323,7 @@ class Window {
             }
         }
 
-        return JSON.stringify({
+        return {
             "id": this.#id,
             "module": this.#module_name,
             "type": this.getType(),
@@ -1275,7 +1340,7 @@ class Window {
             "width": Window.isInCompactMode() ? undefined : this.#dom.outerWidth(),
             "height": Window.isInCompactMode() ? undefined :
                 (this.#collapsed ? this.#last_height : this.#dom.outerHeight())
-        });
+        };
     }
 
     /**
@@ -1396,13 +1461,13 @@ class Menu {
      *  .<name_prefix>_menu.
      *
      *  @static
-     *  @param {String} name_prefix Prefix to use for the menu
+     *  @param {String} [name_prefix] Prefix to use for the menu
      *  block class in CSS.
-     *  @param {int} x x-part of the upper-left corner position
+     *  @param {int} [x] x-part of the upper-left corner position
      *  of a menu.
-     *  @param {int} y y-part of the upper-left corner position
+     *  @param {int} [y] y-part of the upper-left corner position
      *  of a menu.
-     *  @param {Array} options Array of menu items of type
+     *  @param {Array} [options] Array of menu items of type
      *  `[k, v]`, where `k` is the label of a menu item to be
      *  displayed and `v` is of form `[<arbitrary data>,
      *  <click event handler>]`. Click event handlers must
@@ -1410,8 +1475,10 @@ class Menu {
      *  click event object) as the first argument. `<arbitrary
      *  data>` will be accessible in a click handler through
      *  `event.data.data`.
+     *  @param {bool} [html] Whether option texts should be
+     *  treated as an HTML code. This is false by default.
      */
-    static createMenu(name_prefix, x, y, options) {
+    static createMenu(name_prefix, x, y, options, html) {
         if (name_prefix.includes('"') || name_prefix.includes(' ')) {
             window.alert('Illegal characters in ' +
                          'name_prefix in createMenu()!');
@@ -1445,7 +1512,12 @@ class Menu {
                 }
             });
 
-            item.text(k);
+            if (html) {
+                item.html(k);
+            } else {
+                item.text(k);
+            }
+
             menu.append(item);
         }
 
@@ -1623,8 +1695,8 @@ class LinkWindow extends Window {
         } else if ('arrgmt' in data) {
             title += 'arrangement';
 
-            if ('arrgmt_name' in data) {
-                title += ': ' + data.arrgmt_name;
+            if ('name' in data) {
+                title += ': ' + data.name;
             }
         } else {
             return 'Link to share';
@@ -1830,23 +1902,25 @@ class OpenArrangementWindow extends Window {
 <div class="open_arrangement_header">
   <div class="open_arrangement_page">
     <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#000000"
-     class="pointer" onclick="Window.instances['${this.getId()}'].onGoToFirstPageClick(event)">
+     class="pointer open_arrangement_first_page" onclick="Window.instances['${this.getId()}'].onGoToFirstPageClick(event)">
       <title>Go to the first page</title>
       <path d="M440-240 200-480l240-240 56 56-183 184 183 184-56 56Zm264 0L464-480l240-240 56 56-183 184 183 184-56 56Z"/>
     </svg>
     <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#000000"
-     class="pointer" onclick="Window.instances['${this.getId()}'].onGoToPrevPageClick(event)">
+     class="pointer open_arrangement_prev_page" onclick="Window.instances['${this.getId()}'].onGoToPrevPageClick(event)">
       <title>Go to the previous page</title>
       <path d="M560-240 320-480l240-240 56 56-184 184 184 184-56 56Z"/>
     </svg>
-    <span class="open_arrangement_cur_page">Page 1 of 5</span>
+    <span class="open_arrangement_cur_page">
+      Page <span class="open_arrangement_cur_page_num">1</span> of <span class="open_arrangement_last_page_num">1</span> (<span class="open_arrangement_cnt">0</span> arrang.)
+    </span>
     <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#000000"
-     class="pointer" onclick="Window.instances['${this.getId()}'].onGoToNextPageClick(event)">
+     class="pointer open_arrangement_next_page" onclick="Window.instances['${this.getId()}'].onGoToNextPageClick(event)">
       <title>Go to the next page</title>
       <path d="M504-480 320-664l56-56 240 240-240 240-56-56 184-184Z"/>
     </svg>
     <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#000000"
-     class="pointer" onclick="Window.instances['${this.getId()}'].onGoToLastPageClick(event)">
+     class="pointer open_arrangement_last_page" onclick="Window.instances['${this.getId()}'].onGoToLastPageClick(event)">
       <title>Go to the last page</title>
       <path d="M383-480 200-664l56-56 240 240-240 240-56-56 183-184Zm264 0L464-664l56-56 240 240-240 240-56-56 183-184Z"/>
     </svg>
@@ -1873,7 +1947,7 @@ class OpenArrangementWindow extends Window {
   <tr>
     <th>Name</th>
     <th>Type</th>
-    <th>Last update</th>
+    <th>Last update (UTC)</th>
     <th>Actions</th>
   </tr>
 </table>`;
@@ -1881,72 +1955,270 @@ class OpenArrangementWindow extends Window {
 
     // Private, not meant to be called by any external code.
     onGoToFirstPageClick(event) {
-        console.log('go to first page');
+        this.showLoading();
+        Window.sendArrgmtRequest({
+            'type': 'list',
+            'types': this.getContent().attr('data-types'),
+            'sort': this.getContent().attr('data-sort'),
+            'search': this.getContent().attr('data-search'),
+            'page': 1
+        }, (data, status) => {
+            this.#populateTable(data, 1);
+            this.hideLoading();
+        }, (xhr, txt, error) => {
+            window.alert('Could not load the arrangements!\n\n' +
+                         'Error type: ' + txt + '/"' + error + '"/' + xhr.status);
+            this.hideLoading();
+        });
+
+        Window.stopPropagation(event);
     }
 
     // Private, not meant to be called by any external code.
     onGoToPrevPageClick(event) {
-        console.log('go to prev page');
+        let new_page = Number.parseInt(this.getContent().find(
+            '.open_arrangement_cur_page_num').text()) - 1;
+
+        if (isNaN(new_page)) {
+            new_page = 1;
+        }
+
+        this.showLoading();
+        Window.sendArrgmtRequest({
+            'type': 'list',
+            'types': this.getContent().attr('data-types'),
+            'sort': this.getContent().attr('data-sort'),
+            'search': this.getContent().attr('data-search'),
+            'page': new_page,
+        }, (data, status) => {
+            this.#populateTable(data, new_page);
+            this.hideLoading();
+        }, (xhr, txt, error) => {
+            window.alert('Could not load the arrangements!\n\n' +
+                         'Error type: ' + txt + '/"' + error + '"/' + xhr.status);
+            this.hideLoading();
+        });
+
+        Window.stopPropagation(event);
     }
 
     // Private, not meant to be called by any external code.
     onGoToNextPageClick(event) {
-        console.log('go to next page');
+        let new_page = Number.parseInt(this.getContent().find(
+            '.open_arrangement_cur_page_num').text()) + 1;
+
+        if (isNaN(new_page)) {
+            new_page = 1;
+        }
+
+        this.showLoading();
+        Window.sendArrgmtRequest({
+            'type': 'list',
+            'types': this.getContent().attr('data-types'),
+            'sort': this.getContent().attr('data-sort'),
+            'search': this.getContent().attr('data-search'),
+            'page': new_page,
+        }, (data, status) => {
+            this.#populateTable(data, new_page);
+            this.hideLoading();
+        }, (xhr, txt, error) => {
+            window.alert('Could not load the arrangements!\n\n' +
+                         'Error type: ' + txt + '/"' + error + '"/' + xhr.status);
+            this.hideLoading();
+        });
+
+        Window.stopPropagation(event);
     }
 
     // Private, not meant to be called by any external code.
     onGoToLastPageClick(event) {
-        console.log('go to last page');
+        let new_page = Number.parseInt(this.getContent().find(
+            '.open_arrangement_last_page_num').text());
+
+        if (isNaN(new_page)) {
+            new_page = 1;
+        }
+
+        this.showLoading();
+        Window.sendArrgmtRequest({
+            'type': 'list',
+            'types': this.getContent().attr('data-types'),
+            'sort': this.getContent().attr('data-sort'),
+            'search': this.getContent().attr('data-search'),
+            'page': new_page,
+        }, (data, status) => {
+            this.#populateTable(data, new_page);
+            this.hideLoading();
+        }, (xhr, txt, error) => {
+            window.alert('Could not load the arrangements!\n\n' +
+                         'Error type: ' + txt + '/"' + error + '"/' + xhr.status);
+            this.hideLoading();
+        });
+
+        Window.stopPropagation(event);
     }
 
     // Private, not meant to be called by any external code.
     onSearchClick(event) {
-        console.log('search');
+        let search = window.prompt('Please enter your search ' +
+                                   'query for an arrangement name. Use regex.\n\n' +
+                                   'To clear search later, click "Search" and leave ' +
+                                   'the field empty.', this.getContent().attr('data-search'));
+
+        if (search == undefined) {
+            return;
+        }
+
+        if (search == '') {
+            if (this.getContent().attr('data-search') != undefined) {
+                this.showLoading();
+                Window.sendArrgmtRequest({
+                    'type': 'list',
+                    'types': this.getContent().attr('data-types'),
+                    'sort': this.getContent().attr('data-sort')
+                }, (data, status) => {
+                    this.getContent().removeAttr('data-search');
+                    this.#populateTable(data, 1);
+                    this.hideLoading();
+                }, (xhr, txt, error) => {
+                    window.alert('Could not load the arrangements!\n\n' +
+                                 'Error type: ' + txt + '/"' + error + '"/' + xhr.status);
+                    this.hideLoading();
+                });
+            }
+
+            return;
+        }
+
+        this.showLoading();
+        Window.sendArrgmtRequest({
+            'type': 'list',
+            'types': this.getContent().attr('data-types'),
+            'sort': this.getContent().attr('data-sort'),
+            'search': search
+        }, (data, status) => {
+            this.getContent().attr('data-search', search);
+            this.#populateTable(data, 1);
+            this.hideLoading();
+        }, (xhr, txt, error) => {
+            window.alert('Could not load the arrangements!\n\n' +
+                         'Error type: ' + txt + '/"' + error + '"/' + xhr.status);
+            this.hideLoading();
+        });
+
+        Window.stopPropagation(event);
     }
 
     // Private, not meant to be called by any external code.
     onFilterClick(event) {
+        let reload = types => {
+            this.showLoading();
+            Window.sendArrgmtRequest({
+                'type': 'list',
+                'types': types,
+                'sort': this.getContent().attr('data-sort'),
+                'search': this.getContent().attr('data-search')
+            }, (data, status) => {
+                this.getContent().attr('data-types', types);
+                this.#populateTable(data, 1);
+                this.hideLoading();
+            }, (xhr, txt, error) => {
+                window.alert('Could not load the arrangements!\n\n' +
+                             'Error type: ' + txt + '/"' + error + '"/' + xhr.status);
+                this.hideLoading();
+            });
+        };
+
+        let make_bold_if_needed = (txt, val) => {
+            if (this.getContent().attr('data-types') == val) {
+                return '<b>' + txt + '</b>';
+            } else {
+                return txt;
+            }
+        };
+
         let options = [
-            ['Show W only', [undefined, () => {
-
+            [make_bold_if_needed('Show W only', 'W'),
+             [undefined, () => {
+                reload('W');
             }]],
-            ['Show SW only', [undefined, () => {
-
+            [make_bold_if_needed('Show SW only', 'SW'),
+             [undefined, () => {
+                reload('SW');
             }]],
-            ['Show both W and SW', [undefined, () => {
-
+            [make_bold_if_needed('Show both W and SW', 'both'),
+             [undefined, () => {
+                reload('both');
             }]]
         ];
 
         Menu.createMenu('open_arrangement_filter_menu',
                         event.pageX,
                         event.pageY,
-                        options);
+                        options, true);
 
         Window.stopPropagation(event);
     }
 
     // Private, not meant to be called by any external code.
     onSortByClick(event) {
+        let page = Number.parseInt(
+            this.getContent().find('.open_arrangement_cur_page_num').text());
+
+        if (isNaN(page)) {
+            page = 1;
+        }
+
+        let reload = sort => {
+            this.showLoading();
+            Window.sendArrgmtRequest({
+                'type': 'list',
+                'sort': sort,
+                'types': this.getContent().attr('data-types'),
+                'search': this.getContent().attr('data-search'),
+                'page': page
+            }, (data, status) => {
+                this.getContent().attr('data-sort', sort);
+                this.#populateTable(data, page);
+                this.hideLoading();
+            }, (xhr, txt, error) => {
+                window.alert('Could not load the arrangements!\n\n' +
+                             'Error type: ' + txt + '/"' + error + '"/' + xhr.status);
+                this.hideLoading();
+            });
+        };
+
+        let make_bold_if_needed = (txt, val) => {
+            if (this.getContent().attr('data-sort') == val) {
+                return '<b>' + txt + '</b>';
+            } else {
+                return txt;
+            }
+        };
+
         let options = [
-            ['Sort by name (asc.)', [undefined, () => {
-
+            [make_bold_if_needed('Sort by name (asc.)', 'name_asc'),
+             [undefined, () => {
+                reload('name_asc');
             }]],
-            ['Sort by name (desc.)', [undefined, () => {
-
+            [make_bold_if_needed('Sort by name (desc.)', 'name_desc'),
+             [undefined, () => {
+                reload('name_desc');
             }]],
-            ['Sort by last update (asc.)', [undefined, () => {
-
+            [make_bold_if_needed('Sort by last update (asc.)', 'last_update_asc'),
+             [undefined, () => {
+                reload('last_update_asc');
             }]],
-            ['Sort by last update (desc.)', [undefined, () => {
-
+            [make_bold_if_needed('Sort by last update (desc.)', 'last_update_desc'),
+             [undefined, () => {
+                reload('last_update_desc');
             }]]
         ];
 
         Menu.createMenu('open_arrangement_sort_by_menu',
                         event.pageX,
                         event.pageY,
-                        options);
+                        options, true);
 
         Window.stopPropagation(event);
     }
@@ -1971,8 +2243,248 @@ class OpenArrangementWindow extends Window {
 
     }
 
+    #getActionsToolbarCode() {
+        return `
+<td class="open_arrangement_actions_toolbar">
+  <!-- All SVGs used in this actions toolbar code are from Google Material Icons, licensing:
+       SPDX-FileCopyrightText: Google
+       SPDX-License-Identifier: Apache-2.0 -->
+  <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#000000"
+   class="pointer open_arrangement_get_link">
+    <title>Get link</title>
+    <path d="M440-280H280q-83 0-141.5-58.5T80-480q0-83 58.5-141.5T280-680h160v80H280q-50 0-85 35t-35 85q0 50 35 85t85 35h160v80ZM320-440v-80h320v80H320Zm200 160v-80h160q50 0 85-35t35-85q0-50-35-85t-85-35H520v-80h160q83 0 141.5 58.5T880-480q0 83-58.5 141.5T680-280H520Z"/>
+  </svg>
+  <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#000000"
+   class="pointer open_arrangement_edit_name">
+    <title>Edit name</title>
+    <path d="M200-200h57l391-391-57-57-391 391v57Zm-80 80v-170l528-527q12-11 26.5-17t30.5-6q16 0 31 6t26 18l55 56q12 11 17.5 26t5.5 30q0 16-5.5 30.5T817-647L290-120H120Zm640-584-56-56 56 56Zm-141 85-28-29 57 57-29-28Z"/>
+  </svg>
+  <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#000000"
+   class="pointer open_arrangement_delete">
+    <title>Delete</title>
+    <path d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z"/>
+  </svg>
+</td>
+`;
+    }
+
+    onGetLinkClick(event, arrgmt) {
+        Window.stopPropagation(event);
+        new LinkWindow(undefined, undefined, undefined, undefined, {
+            'arrgmt': arrgmt.id,
+            'name': arrgmt.name
+        });
+    }
+
+    onEditNameClick(event, arrgmt) {
+        Window.stopPropagation(event);
+
+        let name = window.prompt('Please enter the new name of your ' +
+                                 'arrangement.', arrgmt.name);
+
+        if (name == '' || name == undefined || name === arrgmt.name) {
+            return;
+        }
+
+        let token = window.prompt('Please enter your auth token. ' +
+                                  "If you don't have/remember one, " +
+                                  'contact your Adaptyst Analyser ' +
+                                  'instance administrator.');
+
+        if (token == '' || token == undefined) {
+            return;
+        }
+
+        this.showLoading();
+        Window.sendArrgmtRequest({
+            'type': 'edit_name',
+            'name': arrgmt.name,
+            'new_name': name,
+            'token': token
+        }, (data, status) => {
+            window.alert('The new name has just been saved!');
+            this.#reloadTable();
+        }, (xhr, txt, error) => {
+            if (xhr.status === 403) {
+                window.alert('Invalid auth token!');
+            } else if (xhr.status === 409) {
+                window.alert('The new name is already taken by an ' +
+                             'existing arrangement!');
+            } else {
+                window.alert('Could not save the new name!\n\n' +
+                             'Error type: ' + txt + '/"' + error +
+                             + '"/' + xhr.status);
+            }
+
+            this.hideLoading();
+        });
+    }
+
+    onDeleteClick(event, arrgmt) {
+        Window.stopPropagation(event);
+
+        let token = window.prompt('Please enter your auth token to confirm ' +
+                                  'deleting the arrangement "' + arrgmt.name + '". ' +
+                                  "If you don't have/remember one, " +
+                                  'contact your Adaptyst Analyser ' +
+                                  'instance administrator.');
+
+        if (token == '' || token == undefined) {
+            return;
+        }
+
+        this.showLoading();
+        Window.sendArrgmtRequest({
+            'type': 'delete',
+            'name': arrgmt.name,
+            'token': token
+        }, (data, status) => {
+            window.alert('The arrangement "' + arrgmt.name + '" ' +
+                         'has just been deleted!');
+            this.#reloadTable();
+        }, (xhr, txt, error) => {
+            if (xhr.status === 403) {
+                window.alert('Invalid auth token!');
+            } else {
+                window.alert('Could not save the new name!\n\n' +
+                             'Error type: ' + txt + '/"' + error +
+                             + '"/' + xhr.status);
+            }
+
+            this.hideLoading();
+        });
+    }
+
+    #reloadTable() {
+        this.showLoading();
+        let page = Number.parseInt(
+            this.getContent().find('.open_arrangement_cur_page_num').text());
+
+        if (isNaN(page)) {
+            page = 1;
+        }
+        
+        Window.sendArrgmtRequest({
+            'type': 'list',
+            'sort': this.getContent().attr('data-sort'),
+            'types': this.getContent().attr('data-types'),
+            'search': this.getContent().attr('data-search'),
+            'page': page
+        }, (data, status) => {
+            this.#populateTable(data, page);
+            this.hideLoading();
+        }, (xhr, txt, error) => {
+            window.alert('Could not load the arrangements!\n\n' +
+                         'Error type: ' + txt + '/"' + error + '"/' + xhr.status);
+            this.hideLoading();
+        });
+    }
+
+    #populateTable(data, page) {
+        let numf = new Intl.NumberFormat('en-US');
+
+        this.getContent().find('.open_arrangement_cur_page_num').text(
+            numf.format(page));
+        this.getContent().find('.open_arrangement_last_page_num').text(
+            numf.format(data.general_total_pages));
+        this.getContent().find('.open_arrangement_cnt').text(
+            numf.format(data.general_total_cnt));
+
+        if (page == 1) {
+            this.getContent().find('.open_arrangement_first_page').removeClass('pointer');
+            this.getContent().find('.open_arrangement_first_page').addClass('disabled');
+            this.getContent().find('.open_arrangement_first_page').attr('onclick', '');
+
+            this.getContent().find('.open_arrangement_prev_page').removeClass('pointer');
+            this.getContent().find('.open_arrangement_prev_page').addClass('disabled');
+            this.getContent().find('.open_arrangement_prev_page').attr('onclick', '');
+        } else {
+            this.getContent().find('.open_arrangement_first_page').removeClass('disabled');
+            this.getContent().find('.open_arrangement_first_page').addClass('pointer');
+            this.getContent().find(
+                '.open_arrangement_first_page').attr('onclick',
+                                                     `Window.instances['${this.getId()}'].` +
+                                                     `onGoToFirstPageClick(event)`);
+
+            this.getContent().find('.open_arrangement_prev_page').removeClass('disabled');
+            this.getContent().find('.open_arrangement_prev_page').addClass('pointer');
+            this.getContent().find(
+                '.open_arrangement_prev_page').attr('onclick',
+                                                    `Window.instances['${this.getId()}'].` +
+                                                    `onGoToPrevPageClick(event)`);
+        }
+
+        if (page == data.general_total_pages) {
+            this.getContent().find('.open_arrangement_last_page').removeClass('pointer');
+            this.getContent().find('.open_arrangement_last_page').addClass('disabled');
+            this.getContent().find('.open_arrangement_last_page').attr('onclick', '');
+
+            this.getContent().find('.open_arrangement_next_page').removeClass('pointer');
+            this.getContent().find('.open_arrangement_next_page').addClass('disabled');
+            this.getContent().find('.open_arrangement_next_page').attr('onclick', '');
+        } else if (page > data.general_total_pages) {
+            onGoToLastPageClick();
+            return;
+        } else {
+            this.getContent().find('.open_arrangement_last_page').removeClass('disabled');
+            this.getContent().find('.open_arrangement_last_page').addClass('pointer');
+            this.getContent().find(
+                '.open_arrangement_last_page').attr('onclick',
+                                                    `Window.instances['${this.getId()}'].` +
+                                                    `onGoToLastPageClick(event)`);
+
+            this.getContent().find('.open_arrangement_next_page').removeClass('disabled');
+            this.getContent().find('.open_arrangement_next_page').addClass('pointer');
+            this.getContent().find(
+                '.open_arrangement_next_page').attr('onclick',
+                                                    `Window.instances['${this.getId()}'].` +
+                                                    `onGoToNextPageClick(event)`);
+        }
+
+        let table = this.getContent().find('.open_arrangement_table');
+        table.find('.open_arrangement_data_row').remove()
+
+        for (const arrgmt of data.list) {
+            let row = $('<tr class="open_arrangement_data_row"></tr>');
+            let type_title = arrgmt.type == 'W' ? "Window arrangement" :
+                "Single window arrangement";
+
+            row.append($(`<td>${arrgmt.name}</td>`));
+            row.append($(`<td><span class="open_arrangement_type" ` +
+                         `title="${type_title}">${arrgmt.type}</span></td>`));
+            row.append($(`<td>${arrgmt.last_update}</td>`));
+
+            let toolbar = $(this.#getActionsToolbarCode());
+
+            toolbar.find('.open_arrangement_get_link').click(event => {
+                this.onGetLinkClick(event, arrgmt);
+            });
+            toolbar.find('.open_arrangement_edit_name').click(event => {
+                this.onEditNameClick(event, arrgmt);
+            });
+            toolbar.find('.open_arrangement_delete').click(event => {
+                this.onDeleteClick(event, arrgmt);
+            });
+
+            row.append(toolbar);
+
+            table.append(row);
+        }
+    }
+
     _setup(data, existing_window) {
-        this.hideLoading();
+        Window.sendArrgmtRequest({
+            'type': 'list'
+        }, (data, status) => {
+            this.getContent().attr('data-sort', 'last_update_desc');
+            this.getContent().attr('data-types', 'both');
+            this.#populateTable(data, 1);
+            this.hideLoading();
+        }, (xhr, txt, error) => {
+            window.alert('Could not load the arrangements!\n\n' +
+                         'Error type: ' + txt + '/"' + error + '"/' + xhr.status);
+            this.close();
+        });
     }
 }
 
@@ -2257,31 +2769,84 @@ function saveWindowArrangement() {
     $('#share').attr('onclick', '');
     $('html').css('cursor', 'progress');
 
-    let session_id = $('#results_combobox option:selected').attr('value');
-    let camera_state = Window.system_graph_view.getCamera().getState();
-    let windows = {};
+    Window.sendArrgmtRequest({
+        'type': 'check_name',
+        'name': name
+    }, (data, status) => {
+        if (data.exists) {
+            window.alert('The arrangement "' + name + '" already exists!');
+            $('#share').removeClass('disabled_wait');
+            $('#share').addClass('pointer');
+            $('#share').attr('onclick', 'onShareClick(event)');
+            $('html').css('cursor', '');
+            return;
+        }
 
-    let cur_x = 10;
-    let cur_y = 10;
+        let session_id = $('#results_combobox option:selected').attr('value');
+        let camera_state = Window.system_graph_view.getCamera().getState();
+        let windows = {};
 
-    let instances = Object.values(Window.instances);
-    instances.sort((a, b) => {
-        return a.getLastFocusTime() - b.getLastFocusTime();
+        let cur_x = 10;
+        let cur_y = 10;
+
+        let instances = Object.values(Window.instances);
+        instances.sort((a, b) => {
+            return a.getLastFocusTime() - b.getLastFocusTime();
+        });
+
+        for (const w of instances) {
+            windows[w.getId()] = w.serialize(cur_x, cur_y);
+            cur_x += 20;
+            cur_y += 20;
+        }
+
+        let arrangement = {
+            "session": session_id,
+            "camera_state": camera_state,
+            "windows": windows
+        };
+
+        Window.sendArrgmtRequest({
+            'type': 'save',
+            'name': name,
+            'data': JSON.stringify(arrangement)
+        }, (data, status) => {
+            window.prompt('The arrangement "' + name + '" has been ' +
+                          'saved successfully!\n\n' +
+                          "Here's the auth token for changing the " +
+                          "arrangement name or deleting the arrangement. " +
+                          "You'll see it only once, save it in a safe place.",
+                          data.token);
+
+            $('#share').removeClass('disabled_wait');
+            $('#share').addClass('pointer');
+            $('#share').attr('onclick', 'onShareClick(event)');
+            $('html').css('cursor', '');
+
+            new LinkWindow(undefined, undefined, undefined, undefined, {
+                'arrgmt': data.id,
+                'name': name
+            });
+        }, (xhr, txt, error) => {
+            window.alert('The arrangement "' + name + '" could not be saved ' +
+                         'due to an error! (save stage, ' +
+                         'error type: ' + txt + '/"' + error + '"/' + xhr.status + ')');
+
+            $('#share').removeClass('disabled_wait');
+            $('#share').addClass('pointer');
+            $('#share').attr('onclick', 'onShareClick(event)');
+            $('html').css('cursor', '');
+        });
+    }, (xhr, txt, error) => {
+        window.alert('The arrangement "' + name + '" could not be saved ' +
+                     'due to an error! (check name stage, ' +
+                     'error type: ' + txt + '/"' + error + '"/' + xhr.status + ')');
+
+        $('#share').removeClass('disabled_wait');
+        $('#share').addClass('pointer');
+        $('#share').attr('onclick', 'onShareClick(event)');
+        $('html').css('cursor', '');
     });
-
-    for (const w of instances) {
-        windows[w.getId()] = w.serialize(cur_x, cur_y);
-        cur_x += 20;
-        cur_y += 20;
-    }
-
-    let arrangement = {
-        "session": session_id,
-        "camera_state": camera_state,
-        "windows": windows
-    };
-
-    window.alert(JSON.stringify(arrangement));
 }
 
 // Private, not meant to be called by any external code.

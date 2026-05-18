@@ -96,16 +96,16 @@ def arrgmt_post():
 
     if req_type == 'check_name':
         return arrgmts.Arrangement.req_check_name(request.values)
-    elif req_type == 'check_token':
-        return arrgmts.Arrangement.req_check_token(request.values)
     elif req_type == 'save':
-        return arrgmts.Arrangement.req_save(request.values)
+        return arrgmts.Arrangement.req_save(
+            request.values, Path(app.config['PERFORMANCE_ANALYSIS_STORAGE']))
     elif req_type == 'edit_name':
         return arrgmts.Arrangement.req_edit_name(request.values)
     elif req_type == 'delete':
         return arrgmts.Arrangement.req_delete(request.values)
     elif req_type == 'get':
-        return arrgmts.Arrangement.req_get(request.values)
+        return arrgmts.Arrangement.req_get(
+            request.values, Path(app.config['PERFORMANCE_ANALYSIS_STORAGE']))
     elif req_type == 'list':
         return arrgmts.Arrangement.req_list(request.values)
     else:

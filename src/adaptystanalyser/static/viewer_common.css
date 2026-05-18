@@ -327,7 +327,7 @@ object {
     }
 
     .link_open > svg {
-        vertical-align:center;
+        vertical-align:middle;
     }
 
     .link_setting {
@@ -376,5 +376,17 @@ object {
     .open_arrangement_cur_page {
         margin-left:5px;
         margin-right:5px;
+    }
+
+    .open_arrangement_actions_toolbar {
+        display:flex;
+        align-items:center;
+    }
+
+    .open_arrangement_type {
+        cursor:help;
+        text-decoration-line:underline;
+        text-decoration-style:dotted;
+        text-decoration-thickness:2px;
     }
 }

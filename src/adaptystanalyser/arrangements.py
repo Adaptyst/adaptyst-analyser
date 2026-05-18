@@ -2,12 +2,13 @@
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
 import json
-import datetime
 import hashlib
-import math
+import os
+import paqpy
 import sqlalchemy as sql
 import sqlalchemy.orm as orm
-import sqlalchemy.engine as engine
+import sqlalchemy.engine
+from datetime import datetime, timezone
 from pathlib import Path
 
 
@@ -22,67 +23,42 @@ class Base(orm.DeclarativeBase):
 
             database_url = 'sqlite:///' + str(db_path)
         else:
-            database_url = engine.make_url(url)
+            database_url = sqlalchemy.engine.make_url(url)
 
             if password is not None:
                 database_url.password = password
 
-        engine = sql.create_engine(database_url, echo=True)
-        Base.metadata.create_all(engine)
+        Base._engine = sql.create_engine(database_url, echo=True)
+        Base.metadata.create_all(Base._engine)
 
 
 class Arrangement(Base):
-    def _hash_token(token):
-        token_salt = os.urandom(32)
-        token_to_save = hashlib.pbkdf2_hmac('sha256',
-                                            token.encode('utf-8'),
-                                            token_salt,
-                                            600000).hex()
-        return token_to_save, token_salt
-
     def req_check_name(data):
         if 'name' not in data:
             return '', 401
 
-        with orm.Session(engine) as session:
+        with orm.Session(Base._engine) as session:
             results = session.scalars(
-                sql.select(arrgmts.Arrangement).where(
+                sql.select(Arrangement).where(
                     Arrangement.name == data['name']))
 
-            if results.first() is None:
-                return '', 404
-            else:
-                return '', 200
+            return json.dumps({
+                'exists': results.first() is not None
+            }), 200
 
-    def req_check_token(data):
-        if 'name' not in data or \
-           'token' not in data:
-            return '', 401
-
-        with orm.Session(engine) as session:
-            results = session.scalars(
-                sql.select(arrgmts.Arrangement).where(
-                    arrgmts.Arrangement.name == data['name']))
-            arrgmt = results.first()
-
-            if arrgmt is None:
-                return '', 404
-
-            if not arrgmt.check_token(data['token']):
-                return '', 403
-
-            return '', 200
-
-    def req_save(data):
+    def req_save(data, storage_path: Path):
         if 'name' not in data or \
            'data' not in data:
             return '', 401
 
-        with orm.Session(engine) as session:
+        with orm.Session(Base._engine) as session:
             results = session.scalars(
-                sql.select(arrgmts.Arrangement).where(
-                    arrgmts.Arrangement.name == data['name']))
+                sql.select(Arrangement).where(
+                    Arrangement.name == data['name']))
             arrgmt = results.first()
+
+            if arrgmt is not None:
+                return '', 409
 
             data_decoded = json.loads(data['data'])
             if 'main_window' in data_decoded:
@@ -90,38 +66,50 @@ class Arrangement(Base):
             else:
                 a_type = 'W'
 
-            token_to_return = None
-            if arrgmt is None:
-                token_to_return = os.urandom(32).hex()
-                token_to_save, token_salt = \
-                    Arrangement._hash_token(token_to_return)
-                arrgmt = arrgmts.Arrangement(name=data['name'],
-                                             a_type=a_type,
-                                             last_update=datetime.now(
-                                                 datetime.timezone.UTC),
-                                             token=token_to_save,
-                                             token_salt=token_salt,
-                                             data=data['data'])
-                session.add(arrgmt)
-            else:
-                if 'token' not in data:
-                    return '', 403
-
-                if not arrgmt.check_token(data['token']):
-                    return '', 403
-
-                arrgmt.a_type = a_type
-                arrgmt.last_update = datetime.now(datetime.timezone.UTC)
-                arrgmt.data = data['data']
-
+            arrgmt = Arrangement(name=data['name'],
+                                 a_type=a_type,
+                                 last_update=datetime.now(
+                                     timezone.utc),
+                                 data=data['data'])
+            token_to_return = arrgmt.gen_token()
+            session.add(arrgmt)
             session.commit()
 
-            if token_to_return is not None:
-                return json.dumps({
-                    'token': token_to_return
-                }), 200
+            try:
+                perf_sessions = set()
 
-            return '', 200
+                def add_session(name):
+                    if name is not None and \
+                       (arrgmt.a_id, name) not in perf_sessions:
+                        s = Session(a_id=arrgmt.a_id, name=name)
+                        s.gen_fingerprint(storage_path)
+                        session.add(s)
+                        perf_sessions.add((arrgmt.a_id, name))
+
+                if 'session' in data_decoded:
+                    add_session(data_decoded['session'])
+
+                if 'main_window' in data_decoded:
+                    add_session(data_decoded['main_window'].get(
+                        'constr', [None])[0])
+
+                    for w in data_decoded.get('other_windows', {}).values():
+                        add_session(w.get('constr', [None])[0])
+                else:
+                    for w in data_decoded.get('windows', {}).values():
+                        add_session(w.get('constr', [None]))[0]
+
+                session.commit()
+            except Exception as e:
+                session.rollback()
+                session.delete(arrgmt)
+                session.commit()
+                raise e
+
+            return json.dumps({
+                'id': arrgmt.a_id,
+                'token': token_to_return
+            }), 200
 
     def req_edit_name(data):
         if 'name' not in data or \
@@ -131,17 +119,17 @@ class Arrangement(Base):
         if 'token' not in data:
             return '', 403
 
-        with orm.Session(engine) as session:
+        with orm.Session(Base._engine) as session:
             results_new_name_check = session.scalars(
-                sql.select(arrgmts.Arrangement).where(
-                    arrgmts.Arrangement.name == data['new_name']))
+                sql.select(Arrangement).where(
+                    Arrangement.name == data['new_name']))
 
             if results_new_name_check.first() is not None:
                 return '', 409
 
             results = session.scalars(
-                sql.select(arrgmts.Arrangement).where(
-                    arrgmts.Arrangement.name == data['name']))
+                sql.select(Arrangement).where(
+                    Arrangement.name == data['name']))
             arrgmt = results.first()
 
             if arrgmt is None:
@@ -151,7 +139,7 @@ class Arrangement(Base):
                 return '', 403
 
             arrgmt.name = data['new_name']
-            arrgmt.last_update = datetime.now(datetime.timezone.UTC)
+            arrgmt.last_update = datetime.now(timezone.utc)
             session.commit()
 
             return '', 200
@@ -163,10 +151,10 @@ class Arrangement(Base):
         if 'token' not in data:
             return '', 403
 
-        with orm.Session(engine) as session:
+        with orm.Session(Base._engine) as session:
             results = session.scalars(
-                sql.select(arrgmts.Arrangement).where(
-                    arrgmts.Arrangement.name == data['name']))
+                sql.select(Arrangement).where(
+                    Arrangement.name == data['name']))
             arrgmt = results.first()
 
             if arrgmt is None:
@@ -180,18 +168,28 @@ class Arrangement(Base):
 
             return '', 200
 
-    def req_get(data):
+    def req_get(data, storage_path: Path):
         if 'name' not in data:
             return '', 401
 
-        with orm.Session(engine) as session:
+        with orm.Session(Base._engine) as session:
             results = session.scalars(
-                sql.select(arrgmts.Arrangement).where(
-                    arrgmts.Arrangement.name == data['name']))
+                sql.select(Arrangement).where(
+                    Arrangement.name == data['name']))
             arrgmt = results.first()
 
             if arrgmt is None:
                 return '', 404
+
+            perf_session_results = session.scalars(
+                sql.select(Session).where(
+                    Session.a_id == arrgmt.a_id))
+
+            for perf_session in perf_session_results:
+                if not perf_session.check_fingerprint(storage_path):
+                    return json.dumps({
+                        'session_invalid': perf_session.name
+                        }), 422
 
             return arrgmt.data, 200
 
@@ -201,39 +199,50 @@ class Arrangement(Base):
         sort = data.get('sort', 'last_update_desc')
         types = data.get('types', 'both')
 
-        if not isinstance(limit, int) or \
-           not isinstance(page, int):
+        try:
+            limit = int(limit)
+            page = int(page)
+        except Exception:
+            return '', 401
+
+        if page < 1:
             return '', 401
 
         if sort == 'last_update_desc':
-            order_by = sql.desc(arrgmts.Arrangement.last_update)
+            order_by = sql.desc(Arrangement.last_update)
         elif sort == 'last_update_asc':
-            order_by = sql.asc(arrgmts.Arrangement.last_update)
+            order_by = sql.asc(Arrangement.last_update)
         elif sort == 'name_desc':
-            order_by = sql.desc(arrgmts.Arrangement.name)
+            order_by = sql.desc(Arrangement.name)
         elif sort == 'name_asc':
-            order_by = sql.asc(arrgmts.Arrangement.name)
+            order_by = sql.asc(Arrangement.name)
         else:
             return '', 401
 
         if types == 'both':
-            where = True
+            where = [True]
         elif types == 'W':
-            where = arrgmts.Arrangement.a_type == 'W'
+            where = [Arrangement.a_type == 'W']
         elif types == 'SW':
-            where = arrgmts.Arrangement.a_type == 'SW'
+            where = [Arrangement.a_type == 'SW']
         else:
             return '', 401
 
-        with orm.Session(engine) as session:
+        if 'search' in data:
+            where.append(Arrangement.name.regexp_match(data['search']))
+
+        with orm.Session(Base._engine) as session:
             results = session.scalars(
-                sql.select(arrgmt.Arrangements).where(where).order_by(
+                sql.select(Arrangement).where(*where).order_by(
                     order_by).limit(limit).offset((page - 1) * limit))
-            cnt = session.scalar(sql.select(sql.count(arrgmt.Arrangements)))
+            cnt = session.query(
+                sql.func.count(Arrangement.a_id)).where(*where).scalar()
 
             return json.dumps({
-                'general_total_pages': (cnt // limit) + (1 if cnt % limit > 0 else 0),
-                'list': list(results)
+                'general_total_cnt': cnt,
+                'general_total_pages': max(1, (cnt // limit) +
+                                           (1 if cnt % limit > 0 else 0)),
+                'list': list(map(Arrangement.to_dict, results))
             }), 200
 
     __tablename__ = 'arrangement'
@@ -241,10 +250,19 @@ class Arrangement(Base):
     a_id: orm.Mapped[int] = orm.mapped_column(primary_key=True)
     name: orm.Mapped[str] = orm.mapped_column(unique=True)
     a_type: orm.Mapped[str]
-    last_update: orm.Mapped[datetime.datetime]
+    last_update: orm.Mapped[datetime]
     token: orm.Mapped[str]
     token_salt: orm.Mapped[bytes]
     data: orm.Mapped[str]
+
+    def gen_token(self):
+        token_to_return = os.urandom(32).hex()
+        self.token_salt = os.urandom(32)
+        self.token = hashlib.pbkdf2_hmac('sha256',
+                                         token_to_return.encode('utf-8'),
+                                         self.token_salt,
+                                         600000).hex()
+        return token_to_return
 
     def check_token(self, user_token):
         hashed_token = hashlib.pbkdf2_hmac('sha256',
@@ -253,13 +271,16 @@ class Arrangement(Base):
                                            600000).hex()
         return hashed_token == self.token
 
-    def __str__(self):
-        return json.dumps({
+    def to_dict(self):
+        return {
             'id': self.a_id,
             'name': self.name,
             'type': self.a_type,
-            'last_update': self.last_update,
-            })
+            'last_update': str(self.last_update),
+        }
+
+    def __str__(self):
+        return json.dumps(self.to_dict())
 
 
 class Session(Base):
@@ -270,4 +291,26 @@ class Session(Base):
         primary_key=True)
     name: orm.Mapped[str] = orm.mapped_column(primary_key=True)
     fingerprint: orm.Mapped[str]
-    last_update_or_check: orm.Mapped[datetime.datetime]
+    last_update_or_successful_check: orm.Mapped[datetime]
+
+    def gen_fingerprint(self, storage_path: Path):
+        p = storage_path / self.name
+        if not p.exists():
+            raise FileNotFoundError(str(p))
+
+        self.fingerprint = paqpy.hash_source(str(p), True)
+        self.last_update_or_successful_check = \
+            datetime.now(timezone.utc)
+
+    def check_fingerprint(self, storage_path: Path):
+        p = storage_path / self.name
+        if not p.exists():
+            return False
+
+        fingerprint = paqpy.hash_source(str(p), True)
+        if fingerprint == self.fingerprint:
+            self.last_update_or_successful_check = \
+                datetime.now(timezone.utc)
+            return True
+        else:
+            return False
