@@ -196,46 +196,92 @@ class Window {
      *  using the ID stored in the JSON string under "id".
      *
      *  @static
+     *  @param [json] A JSON-able dictionary produced by `serialize()` or
+     *  an equivalent JSON string.
+     *  @param {Function} [ready_handler] Function to be called
+     *  when a window finishes loading. It should have zero parameters and
+     *  no return value. This is not run if an error occurs. It can be
+     *  undefined.
      */
-    static deserialize(json) {
-        let obj = json instanceof String ? JSON.parse(json) : json;
+    static deserialize(json, ready_handler) {
+        let obj = typeof json == 'string' || json instanceof String ? JSON.parse(json) : json;
 
-        import('./modules/' + obj.module + '/backend.js')
-            .then(backend => {
-                if (!(obj.module in Window.modules_loaded)) {
-                    $('<link type="text/css" rel="stylesheet" href="/static/' +
-                      'modules/' + obj.module + '/backend.css" />').appendTo('head');
-                    Window.modules_loaded[obj.module] = true;
+        let createWindow = window_class => {
+            let session = undefined;
+
+            if (obj.constr[0] != undefined) {
+                if (obj.constr[0] in Session.instances) {
+                    session = Session.instances[obj.constr[0]];
+                } else {
+                    session =
+                        new Session(obj.constr[0],
+                                    $('#results_combobox').find(
+                                        'option[value="' + obj.constr[0] + '"]').attr(
+                                            'data-label'));
                 }
+            }
 
-                let window_class = backend.getWindowClass(obj.type);
+            new window_class(session,
+                             obj.constr[1],
+                             obj.constr[2],
+                             obj.constr[3],
+                             obj.constr[4],
+                             obj.constr[5],
+                             obj.constr[6],
+                             obj.dependencies,
+                             obj.id, obj.width,
+                             obj.height,
+                             w => {
+                                 if (obj.data != undefined) {
+                                     w._importData(obj.data);
+                                 }
 
-                if (window_class == undefined) {
-                    window.alert('Could not find window type ' + obj.type + ' in module ' +
-                                 obj.module + '!');
-                    return;
-                }
+                                 w.#editTitle(obj.custom_title);
 
-                let w = new window_class(obj.constr[0],
-                                         obj.constr[1],
-                                         obj.constr[2],
-                                         obj.constr[3],
-                                         obj.constr[4],
-                                         obj.constr[5],
-                                         obj.constr[6],
-                                         obj.dependencies,
-                                         obj.id, obj.width,
-                                         obj.height);
+                                 if (obj.collapsed && !Window.isInCompactMode()) {
+                                     w.onVisibilityClick();
+                                 }
 
-                w.#editTitle(obj.custom_title);
+                                 if (ready_handler != undefined) {
+                                     ready_handler();
+                                 }
+                             });
+        };
 
-                if (obj.collapsed) {
-                    w.onVisibilityClick();
-                }
-            }, () => {
-                window.alert('Could not load module ' + obj.module + '! ' +
-                             'Are you sure it is installed?');
-            });
+        if (obj.module == undefined) {
+            if (obj.type === 'link') {
+                createWindow(LinkWindow);
+            } else if (obj.type === 'settings') {
+                createWindow(SettingsWindow);
+            } else if (obj.type === 'open_arrangement') {
+                createWindow(OpenArrangementWindow);
+            } else {
+                window.alert('Could not find window type ' + obj.type +
+                             ' (no module is specified)!');
+            }
+        } else {
+            import('./modules/' + obj.module + '/backend.js')
+                .then(backend => {
+                    if (!(obj.module in Window.modules_loaded)) {
+                        $('<link type="text/css" rel="stylesheet" href="/static/' +
+                          'modules/' + obj.module + '/backend.css" />').appendTo('head');
+                        Window.modules_loaded[obj.module] = true;
+                    }
+
+                    let window_class = backend.getWindowClass(obj.type);
+
+                    if (window_class == undefined) {
+                        window.alert('Could not find window type ' + obj.type + ' in module ' +
+                                     obj.module + '!');
+                        return;
+                    }
+
+                    createWindow(window_class);
+                }, () => {
+                    window.alert('Could not load module ' + obj.module + '! ' +
+                                 'Are you sure it is installed?');
+                });
+        }
     }
 
     // Private, should not be called by any external code.
@@ -314,8 +360,10 @@ class Window {
      *  module. If undefined, the default value will be used. This is
      *  always ignored in the compact mode.
      *  @param {Function} [ready_handler] Function to be called
-     *  when a window finishes loading. It should have zero parameters and
-     *  no return value. This is not run if an error occurs.
+     *  when a window finishes loading. It should have no return value
+     *  and one parameter indicating the loaded window object and no return
+     *  value. This is not run if an error occurs. It can be
+     *  undefined.
      */
     constructor(session, entity_id, node_id,
                 module_name, data, x, y,
@@ -362,7 +410,8 @@ class Window {
 
         if (window_dependencies != undefined &&
             window_dependencies.length > 0 &&
-            window_dependencies[0] instanceof String) {
+            (typeof window_dependencies[0] == 'string' ||
+             window_dependencies[0] instanceof String)) {
             this.#window_dependencies = [];
 
             for (const s of window_dependencies) {
@@ -712,14 +761,13 @@ class Window {
 
         let getName = () => {
             return window.prompt(
-                "You're about to save the single window (along with its dependencies) for " +
+                "You're about to save the single window/tab (along with its dependencies) for " +
                     "opening later or sharing with others using the same Adaptyst Analyser instance.\n\n" +
-                    "This is called a single window arrangement: it is defined as your chosen window, " +
+                    "This is called a single window arrangement: it is defined as your chosen window/tab, " +
                     "its dependencies if any, and " +
                     "the session formally associated with the " +
-                    "window if any (note that a window related to multiple sessions isn't formally associated with " +
-                    "any session).\n\n" +
-                    "The window content is also saved if the content export is supported by a corresponding module.\n\n" +
+                    "window/tab if any.\n\n" +
+                    "The window/tab content is also saved if the content export is supported by a corresponding module.\n\n" +
                     "What name would you like to give to your arrangement? It must not be empty.");
         };
 
@@ -806,7 +854,10 @@ class Window {
 
                 new LinkWindow(undefined, undefined, undefined, undefined, {
                     'arrgmt': data.id,
-                    'name': name
+                    'name': name,
+                    'compact': true,
+                    'hide_header': true,
+                    'hide_footer': true
                 });
             }, (xhr, txt, error) => {
                 window.alert('The arrangement "' + name + '" could not be saved ' +
@@ -906,6 +957,9 @@ class Window {
                     this.finishResize();
                     this.#being_resized = false;
                 }
+
+                $('head').find('title').text('Adaptyst Analyser: ' +
+                                             this.getCurrentTitle());
             } else {
                 if (Window.#largest_z_index >= 10000) {
                     let z_index_arr = [];
@@ -1137,7 +1191,7 @@ class Window {
                                                                      `Window.instances['${this.#id}'].onShareClick(event)`);
 
             if (this.#ready_handler != undefined) {
-                this.#ready_handler();
+                this.#ready_handler(this);
                 this.#ready_handler = undefined;
             }
         }
@@ -2276,7 +2330,10 @@ class OpenArrangementWindow extends Window {
         Window.stopPropagation(event);
         new LinkWindow(undefined, undefined, undefined, undefined, {
             'arrgmt': arrgmt.id,
-            'name': arrgmt.name
+            'name': arrgmt.name,
+            'compact': arrgmt.type === 'SW',
+            'hide_header': arrgmt.type === 'SW',
+            'hide_footer': arrgmt.type === 'SW'
         });
     }
 
@@ -2504,7 +2561,11 @@ function openSystemGraph() {
             w.unfocus();
         }
 
-        Window.system_graph_view.refresh();
+        if (Window.system_graph_view != undefined) {
+            Window.system_graph_view.refresh();
+        }
+
+        $('head').find('title').text('Adaptyst Analyser');
     }
 }
 
@@ -2643,6 +2704,11 @@ function loadCurrentSession(ready_handler) {
             $('#loading').hide();
 
             if (Window.isInCompactMode()) {
+                $('#main_tab').attr('title', 'System graph (session: ' +
+                                    label + ')');
+                $('#main_tab_title').text('System graph (session: ' +
+                                          label + ')');
+
                 $('#loading').removeClass('loading');
                 $('#footer').append($('#loading'));
             }
@@ -2860,7 +2926,81 @@ function saveWindowArrangement() {
 // Private, not meant to be called by any external code.
 function loadArrangement(data) {
     let openWindows = () => {
-        $('#arrgmt_loading').remove();
+        let windows_to_open = [];
+        let windows_visited = new Set();
+        let error = false;
+
+        let processDependency = (cur_w, window_dict) => {
+            if (windows_visited.has(cur_w)) {
+                return;
+            }
+
+            windows_visited.add(cur_w);
+
+            if (cur_w.dependencies != undefined) {
+                for (const w of cur_w.dependencies) {
+                    if (error) {
+                        return;
+                    }
+
+                    if (window_dict[w] == undefined) {
+                        error = true;
+                        return;
+                    }
+
+                    processDependency(window_dict[w],
+                                      window_dict);
+                }
+            }
+
+            windows_to_open.push(cur_w);
+        };
+
+        if (data.other_windows != undefined) {
+            for (const w of Object.values(data.other_windows)) {
+                if (error) {
+                    break;
+                }
+
+                processDependency(w, data.other_windows);
+            }
+        }
+
+        if (data.windows != undefined) {
+            for (const w of Object.values(data.windows)) {
+                if (error) {
+                    break;
+                }
+
+                processDependency(w, data.windows);
+            }
+        }
+
+        if (error) {
+            window.alert('The arrangement refers to non-existing ' +
+                         'windows! This means it is malformed and cannot ' +
+                         'be opened.');
+            return;
+        }
+
+        if (data.main_window != undefined) {
+            windows_to_open.push(data.main_window);
+        }
+
+        let index = 0;
+        let deserializeNextWindow = () => {
+            if (++index < windows_to_open.length) {
+                Window.deserialize(windows_to_open[index],
+                                   deserializeNextWindow);
+            } else {
+                $('#arrgmt_loading').remove();
+            }
+        };
+
+        if (windows_to_open.length > 0) {
+            Window.deserialize(windows_to_open[0],
+                               deserializeNextWindow);
+        }
     };
 
     if (data.session != undefined) {

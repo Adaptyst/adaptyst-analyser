@@ -164,21 +164,14 @@ SPDX-License-Identifier: LGPL-3.0-or-later
       <div id="tabs">
         <div id="tabs_content">
           {% if session or arrgmt %}
-
-          {% if session %}
-          <div id="main_tab" class="window_header" title="System graph (session: {{ session }})"
+          <div id="main_tab" class="window_header" title="System graph (empty: no session opened))"
                onclick="openSystemGraph()">
-            <i>System graph (session: {{ session }})</i>
-          {% else %}
-          <div id="main_tab" class="window_header" title="System graph (if a session is opened)"
-               onclick="openSystemGraph()">
-            <i>System graph (if a session is opened)</i>
-          {% endif %}
+            <i id="main_tab_title">System graph (empty: no session opened)</i>
             <div class="window_buttons">
               <!-- This SVG is from Google Material Icons, licensing:
                    SPDX-FileCopyrightText: Google
                    SPDX-License-Identifier: Apache-2.0 -->
-              <svg id="refresh" xmlns="http://www.w3.org/2000/svg" class="window_refresh"
+              <svg id="refresh" xmlns="http://www.w3.org/2000/svg" class="window_refresh disabled"
                    viewBox="0 -960 960 960" onmousedown="Window.stopPropagation(event)">
                 <title>Reset/Refresh contents</title>
                 <path d="M480-160q-134 0-227-93t-93-227q0-134 93-227t227-93q69 0 132 28.5T720-690v-110h80v280H520v-80h168q-32-56-87.5-88T480-720q-100 0-170 70t-70 170q0 100 70 170t170 70q77 0 139-44t87-116h84q-28 106-114 173t-196 67Z"/>
@@ -230,7 +223,7 @@ SPDX-License-Identifier: LGPL-3.0-or-later
         <span id="footer_pinned_text">
           Welcome to Adaptyst Analyser in compact mode! You can switch between tabs by clicking one of them at the top. Hover over a tab to see what operations you can do on it. The blue tab is pinned and has the system graph of the session, a black tab is the non-system-graph one open at the moment (if any), and all other tabs are grey.
         </span>
-        <span id="footer_text"></span>
+        <span id="footer_text">The system graph tab is empty because no session is opened.</span>
         {% else %}
         <span id="footer_text">
           Welcome to Adaptyst Analyser! Select a performance analysis session in the combobox at the top to start.

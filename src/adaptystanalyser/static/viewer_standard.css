@@ -48,9 +48,9 @@ html {
     position:absolute;
     display:flex;
     flex-direction:column;
-    border-style:solid;
-    border-color:black;
-    border-width:2px;
+    outline-style:solid;
+    outline-color:black;
+    outline-width:2px;
     overflow:hidden;
     resize:both;
     box-shadow:3px 3px 10px;
