@@ -318,11 +318,25 @@ class Window {
     #ready_handler;
 
     /**
-     *  Constructs a Window object and displays a window
-     *  corresponding to the object. All subclasses
-     *  must call this constructor.
+     *  Constructs a Window object. This doesn't do anything
+     *  else, including displaying a window: you need to call
+     *  `init()` for this.
      *
      *  @constructor
+     */
+    constructor() {
+
+    }
+
+    /**
+     *  Initialises a Window object and displays a window
+     *  corresponding to the object. This function must
+     *  be called by all subclasses from their constructor,
+     *  with the first argument being JavaScript "this".
+     *
+     *  @param {Object} [instance] A Window subclass object
+     *  referred to by JavaScript "this" inside the subclass
+     *  constructor.
      *  @param {Object} [session] `Session` object corresponding
      *  to a window. This is provided by a parameter of
      *  `createRootWindow()`. It can be undefined.
@@ -360,15 +374,14 @@ class Window {
      *  module. If undefined, the default value will be used. This is
      *  always ignored in the compact mode.
      *  @param {Function} [ready_handler] Function to be called
-     *  when a window finishes loading. It should have no return value
-     *  and one parameter indicating the loaded window object and no return
-     *  value. This is not run if an error occurs. It can be
-     *  undefined.
+     *  when a window finishes loading. It should have one parameter
+     *  corresponding to the loaded Window subclass object and no return value.
+     *  This is not run if an error occurs. It can be undefined.
      */
-    constructor(session, entity_id, node_id,
-                module_name, data, x, y,
-                window_dependencies, custom_id,
-                width, height, ready_handler) {
+    init(instance, session, entity_id, node_id,
+         module_name, data, x, y,
+         window_dependencies, custom_id,
+         width, height, ready_handler) {
         let index = 0;
         let id = undefined;
 
@@ -392,7 +405,7 @@ class Window {
             id = custom_id;
         }
 
-        Window.instances[id] = this;
+        Window.instances[id] = instance;
 
         this.#id = id;
         this.#session = session;
@@ -446,6 +459,20 @@ class Window {
         } else {
             this.#setup(data);
         }
+    }
+
+    /**
+     *  Gets a Window subclass object. This is equivalent to the
+     *  "this"/"self" keyword in an object-oriented programming (OOP)
+     *  language.
+     *
+     *  Please note that JavaScript's "this" is NOT equivalent
+     *  and you should not rely on it unless you know the difference
+     *  between JavaScript and an OOP language in handling the "this"
+     *  keyword.
+     */
+    inst() {
+        return Window.instances[this.#id];
     }
 
     /**
@@ -1191,7 +1218,7 @@ class Window {
                                                                      `Window.instances['${this.#id}'].onShareClick(event)`);
 
             if (this.#ready_handler != undefined) {
-                this.#ready_handler(this);
+                this.#ready_handler(this.inst());
                 this.#ready_handler = undefined;
             }
         }
@@ -1414,18 +1441,17 @@ class Window {
      *  as long as it is JSON-compatible and accepted by the implementation
      *  of `_importData()`.
      *
-     *  This method is intended to be abstract, but for backward
-     *  compatibility reasons, the default implementation returns undefined.
+     *  The default implementation returns undefined. You should override
+     *  this method if you want a different behaviour.
      *
-     *  @abstract
-     *  @return Serialised data of the window.
+     *  @return Serialised content data of the window.
      */
     _exportData() {
         return undefined;
     }
 
     /**
-     *  Restores the window using data produced by `_exportData()`. This
+     *  Restores the window content using data produced by `_exportData()`. This
      *  is used by `Window.deserialize()`, called e.g. when a user opens
      *  a window arrangement saved by another user of the same Adaptyst
      *  Analyser instance.
@@ -1433,11 +1459,10 @@ class Window {
      *  If used, this is guaranteed to be called after the window
      *  is constructed and `_setup()` is executed.
      *
-     *  This method is intended to be abstract, but for backward
-     *  compatbility reasons, the default implementation does nothing.
+     *  The default implementation does nothing. You should override
+     *  this method if you want a different behaviour.
      *
-     *  @abstract
-     *  @param [data] Serialised data of the window to be restored.
+     *  @param [data] Serialised content data of the window to be restored.
      */
     _importData(data) {
 
@@ -1703,6 +1728,11 @@ class Menu {
 
 // Private, not meant to be used by any external code.
 class LinkWindow extends Window {
+    constructor(...args) {
+        super();
+        this.init(this, ...args);
+    }
+
     getType() {
         return 'link';
     }
@@ -1782,27 +1812,27 @@ class LinkWindow extends Window {
 
         if ('compact' in data && data.compact) {
             url_txt += '&compact=1';
-            this.getContent().find('.link_compact').prop('checked', true);
+            this.inst().getContent().find('.link_compact').prop('checked', true);
 
             if ('hide_header' in data && data.hide_header) {
                 url_txt += '&hide_header=1';
-                this.getContent().find('.link_hide_header').prop('checked', true);
+                this.inst().getContent().find('.link_hide_header').prop('checked', true);
             }
 
             if ('hide_footer' in data && data.hide_footer) {
                 url_txt += '&hide_footer=1';
-                this.getContent().find('.link_hide_footer').prop('checked', true);
+                this.inst().getContent().find('.link_hide_footer').prop('checked', true);
             }
         } else {
-            this.getContent().find('.link_hide_header').prop('disabled', true);
-            this.getContent().find('.link_hide_footer').prop('disabled', true);
+            this.inst().getContent().find('.link_hide_header').prop('disabled', true);
+            this.inst().getContent().find('.link_hide_footer').prop('disabled', true);
         }
 
         let url = new URL(url_txt, document.baseURI);
 
-        this.getContent().find('.link_box').val(url.href);
-        this.getContent().find('.link_box').select();
-        this.getContent().find('.link_open').attr('href', url.href);
+        this.inst().getContent().find('.link_box').val(url.href);
+        this.inst().getContent().find('.link_box').select();
+        this.inst().getContent().find('.link_open').attr('href', url.href);
 
         let refresh = () => {
             let url_txt = './?';
@@ -1813,42 +1843,47 @@ class LinkWindow extends Window {
                 url_txt += 'arrgmt=' + data.arrgmt;
             }
 
-            if (this.getContent().find('.link_compact').prop('checked')) {
+            if (this.inst().getContent().find('.link_compact').prop('checked')) {
                 url_txt += '&compact=1';
 
-                this.getContent().find('.link_hide_header').prop('disabled', false);
-                this.getContent().find('.link_hide_footer').prop('disabled', false);
+                this.inst().getContent().find('.link_hide_header').prop('disabled', false);
+                this.inst().getContent().find('.link_hide_footer').prop('disabled', false);
 
-                if (this.getContent().find('.link_hide_header').prop('checked')) {
+                if (this.inst().getContent().find('.link_hide_header').prop('checked')) {
                     url_txt += '&hide_header=1';
                 }
 
-                if (this.getContent().find('.link_hide_footer').prop('checked')) {
+                if (this.inst().getContent().find('.link_hide_footer').prop('checked')) {
                     url_txt += '&hide_footer=1';
                 }
             } else {
-                this.getContent().find('.link_hide_header').prop('disabled', true);
-                this.getContent().find('.link_hide_footer').prop('disabled', true);
+                this.inst().getContent().find('.link_hide_header').prop('disabled', true);
+                this.inst().getContent().find('.link_hide_footer').prop('disabled', true);
             }
 
             let url = new URL(url_txt, document.baseURI);
 
-            this.getContent().find('.link_box').val(url.href);
-            this.getContent().find('.link_box').select();
-            this.getContent().find('.link_open').attr('href', url.href);
+            this.inst().getContent().find('.link_box').val(url.href);
+            this.inst().getContent().find('.link_box').select();
+            this.inst().getContent().find('.link_open').attr('href', url.href);
         };
 
-        this.getContent().find('.link_compact').on('change', refresh);
-        this.getContent().find('.link_hide_header').on('change', refresh);
-        this.getContent().find('.link_hide_footer').on('change', refresh);
+        this.inst().getContent().find('.link_compact').on('change', refresh);
+        this.inst().getContent().find('.link_hide_header').on('change', refresh);
+        this.inst().getContent().find('.link_hide_footer').on('change', refresh);
 
-        this.hideLoading();
+        this.inst().hideLoading();
     }
 }
 
 // Private, not meant to be used by any external code.
 class SettingsWindow extends Window {
     #current_backend;
+
+    constructor(...args) {
+        super();
+        this.init(this, ...args);
+    }
 
     getType() {
         return 'settings';
@@ -1881,17 +1916,17 @@ class SettingsWindow extends Window {
     }
 
     prepareRefresh() {
-        if (this.#current_backend != undefined) {
-            this.#current_backend.hide();
-            this.#current_backend.appendTo('body');
-            this.#current_backend = undefined;
+        if (this.inst().#current_backend != undefined) {
+            this.inst().#current_backend.hide();
+            this.inst().#current_backend.appendTo('body');
+            this.inst().#current_backend = undefined;
         }
     }
 
     prepareClose() {
-        if (this.#current_backend != undefined) {
-            this.#current_backend.hide();
-            this.#current_backend.appendTo('body');
+        if (this.inst().#current_backend != undefined) {
+            this.inst().#current_backend.hide();
+            this.inst().#current_backend.appendTo('body');
         }
 
         $('#settings_settings').attr('class', 'pointer');
@@ -1923,31 +1958,53 @@ class SettingsWindow extends Window {
         });
 
         names.forEach(entry => {
-            this.getContent().find('.settings_backends_combobox').append(
+            this.inst().getContent().find('.settings_backends_combobox').append(
                 new Option(entry[0], entry[1]));
         });
 
-        this.getContent().find('.settings_backends_combobox').on('change', event => {
-            this.getContent().find('.settings_backends_combobox option:selected').each((i, elem) => {
+        this.inst().getContent().find('.settings_backends_combobox').on('change', event => {
+            this.inst().getContent().find('.settings_backends_combobox option:selected').each((i, elem) => {
                 let id = $(elem).val();
 
-                if (this.#current_backend == undefined) {
-                    this.getContent().find('.settings_space').html('');
+                if (this.inst().#current_backend == undefined) {
+                    this.inst().getContent().find('.settings_space').html('');
                 } else {
-                    this.#current_backend.hide();
-                    this.#current_backend.appendTo('body');
+                    this.inst().#current_backend.hide();
+                    this.inst().#current_backend.appendTo('body');
                 }
 
-                this.#current_backend = $('#' + id);
-                this.#current_backend.appendTo(this.getContent().find('.settings_space'));
-                this.#current_backend.show();
+                this.inst().#current_backend = $('#' + id);
+                this.inst().#current_backend.appendTo(this.inst().getContent().find('.settings_space'));
+                this.inst().#current_backend.show();
             });
         });
-        this.hideLoading();
+        this.inst().hideLoading();
+    }
+
+    _exportData() {
+        return {
+            'module': this.inst().getContent().find('.settings_backends_combobox option:selected').val()
+        };
+    }
+
+    _importData(data) {
+        this.inst().getContent().find('.settings_backends_combobox').val(data.module);
+        this.inst().getContent().find('.settings_backends_combobox').trigger('change');
     }
 }
 
 class OpenArrangementWindow extends Window {
+    #types
+    #sort
+    #search
+    #page
+    #last_page
+
+    constructor(...args) {
+        super();
+        this.init(this, ...args);
+    }
+
     getType() {
         return 'open_arrangement';
     }
@@ -1960,12 +2017,12 @@ class OpenArrangementWindow extends Window {
 <div class="open_arrangement_header">
   <div class="open_arrangement_page">
     <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#000000"
-     class="pointer open_arrangement_first_page" onclick="Window.instances['${this.getId()}'].onGoToFirstPageClick(event)">
+     class="pointer open_arrangement_first_page" onclick="Window.instances['${this.inst().getId()}'].onGoToFirstPageClick(event)">
       <title>Go to the first page</title>
       <path d="M440-240 200-480l240-240 56 56-183 184 183 184-56 56Zm264 0L464-480l240-240 56 56-183 184 183 184-56 56Z"/>
     </svg>
     <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#000000"
-     class="pointer open_arrangement_prev_page" onclick="Window.instances['${this.getId()}'].onGoToPrevPageClick(event)">
+     class="pointer open_arrangement_prev_page" onclick="Window.instances['${this.inst().getId()}'].onGoToPrevPageClick(event)">
       <title>Go to the previous page</title>
       <path d="M560-240 320-480l240-240 56 56-184 184 184 184-56 56Z"/>
     </svg>
@@ -1973,29 +2030,29 @@ class OpenArrangementWindow extends Window {
       Page <span class="open_arrangement_cur_page_num">1</span> of <span class="open_arrangement_last_page_num">1</span> (<span class="open_arrangement_cnt">0</span> arrang.)
     </span>
     <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#000000"
-     class="pointer open_arrangement_next_page" onclick="Window.instances['${this.getId()}'].onGoToNextPageClick(event)">
+     class="pointer open_arrangement_next_page" onclick="Window.instances['${this.inst().getId()}'].onGoToNextPageClick(event)">
       <title>Go to the next page</title>
       <path d="M504-480 320-664l56-56 240 240-240 240-56-56 184-184Z"/>
     </svg>
     <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#000000"
-     class="pointer open_arrangement_last_page" onclick="Window.instances['${this.getId()}'].onGoToLastPageClick(event)">
+     class="pointer open_arrangement_last_page" onclick="Window.instances['${this.inst().getId()}'].onGoToLastPageClick(event)">
       <title>Go to the last page</title>
       <path d="M383-480 200-664l56-56 240 240-240 240-56-56 183-184Zm264 0L464-664l56-56 240 240-240 240-56-56 183-184Z"/>
     </svg>
   </div>
   <div class="open_arrangement_table_actions">
     <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#000000"
-     class="pointer" onclick="Window.instances['${this.getId()}'].onSearchClick(event)">
+     class="pointer" onclick="Window.instances['${this.inst().getId()}'].onSearchClick(event)">
       <title>Search</title>
       <path d="M784-120 532-372q-30 24-69 38t-83 14q-109 0-184.5-75.5T120-580q0-109 75.5-184.5T380-840q109 0 184.5 75.5T640-580q0 44-14 83t-38 69l252 252-56 56ZM380-400q75 0 127.5-52.5T560-580q0-75-52.5-127.5T380-760q-75 0-127.5 52.5T200-580q0 75 52.5 127.5T380-400Z"/>
     </svg>
     <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#000000"
-     class="pointer" onclick="Window.instances['${this.getId()}'].onFilterClick(event)">
+     class="pointer" onclick="Window.instances['${this.inst().getId()}'].onFilterClick(event)">
       <title>Filter types</title>
       <path d="M440-160q-17 0-28.5-11.5T400-200v-240L168-736q-15-20-4.5-42t36.5-22h560q26 0 36.5 22t-4.5 42L560-440v240q0 17-11.5 28.5T520-160h-80Zm40-308 198-252H282l198 252Zm0 0Z"/>
     </svg>
     <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#000000"
-     class="pointer" onclick="Window.instances['${this.getId()}'].onSortByClick(event)">
+     class="pointer" onclick="Window.instances['${this.inst().getId()}'].onSortByClick(event)">
       <title>Sort by...</title>
       <path d="M120-240v-80h240v80H120Zm0-200v-80h480v80H120Zm0-200v-80h720v80H120Z"/>
     </svg>
@@ -2013,20 +2070,20 @@ class OpenArrangementWindow extends Window {
 
     // Private, not meant to be called by any external code.
     onGoToFirstPageClick(event) {
-        this.showLoading();
+        this.inst().showLoading();
         Window.sendArrgmtRequest({
             'type': 'list',
-            'types': this.getContent().attr('data-types'),
-            'sort': this.getContent().attr('data-sort'),
-            'search': this.getContent().attr('data-search'),
+            'types': this.inst().#types,
+            'sort': this.inst().#sort,
+            'search': this.inst().#search,
             'page': 1
         }, (data, status) => {
-            this.#populateTable(data, 1);
-            this.hideLoading();
+            this.inst().#populateTable(data, 1);
+            this.inst().hideLoading();
         }, (xhr, txt, error) => {
             window.alert('Could not load the arrangements!\n\n' +
                          'Error type: ' + txt + '/"' + error + '"/' + xhr.status);
-            this.hideLoading();
+            this.inst().hideLoading();
         });
 
         Window.stopPropagation(event);
@@ -2034,27 +2091,20 @@ class OpenArrangementWindow extends Window {
 
     // Private, not meant to be called by any external code.
     onGoToPrevPageClick(event) {
-        let new_page = Number.parseInt(this.getContent().find(
-            '.open_arrangement_cur_page_num').text()) - 1;
-
-        if (isNaN(new_page)) {
-            new_page = 1;
-        }
-
-        this.showLoading();
+        this.inst().showLoading();
         Window.sendArrgmtRequest({
             'type': 'list',
-            'types': this.getContent().attr('data-types'),
-            'sort': this.getContent().attr('data-sort'),
-            'search': this.getContent().attr('data-search'),
-            'page': new_page,
+            'types': this.inst().#types,
+            'sort': this.inst().#sort,
+            'search': this.inst().#search,
+            'page': this.inst().#page - 1,
         }, (data, status) => {
-            this.#populateTable(data, new_page);
-            this.hideLoading();
+            this.inst().#populateTable(data, new_page);
+            this.inst().hideLoading();
         }, (xhr, txt, error) => {
             window.alert('Could not load the arrangements!\n\n' +
                          'Error type: ' + txt + '/"' + error + '"/' + xhr.status);
-            this.hideLoading();
+            this.inst().hideLoading();
         });
 
         Window.stopPropagation(event);
@@ -2062,27 +2112,20 @@ class OpenArrangementWindow extends Window {
 
     // Private, not meant to be called by any external code.
     onGoToNextPageClick(event) {
-        let new_page = Number.parseInt(this.getContent().find(
-            '.open_arrangement_cur_page_num').text()) + 1;
-
-        if (isNaN(new_page)) {
-            new_page = 1;
-        }
-
-        this.showLoading();
+        this.inst().showLoading();
         Window.sendArrgmtRequest({
             'type': 'list',
-            'types': this.getContent().attr('data-types'),
-            'sort': this.getContent().attr('data-sort'),
-            'search': this.getContent().attr('data-search'),
-            'page': new_page,
+            'types': this.inst().#types,
+            'sort': this.inst().#sort,
+            'search': this.inst().#search,
+            'page': this.inst().#page + 1,
         }, (data, status) => {
-            this.#populateTable(data, new_page);
-            this.hideLoading();
+            this.inst().#populateTable(data, new_page);
+            this.inst().hideLoading();
         }, (xhr, txt, error) => {
             window.alert('Could not load the arrangements!\n\n' +
                          'Error type: ' + txt + '/"' + error + '"/' + xhr.status);
-            this.hideLoading();
+            this.inst().hideLoading();
         });
 
         Window.stopPropagation(event);
@@ -2090,27 +2133,20 @@ class OpenArrangementWindow extends Window {
 
     // Private, not meant to be called by any external code.
     onGoToLastPageClick(event) {
-        let new_page = Number.parseInt(this.getContent().find(
-            '.open_arrangement_last_page_num').text());
-
-        if (isNaN(new_page)) {
-            new_page = 1;
-        }
-
-        this.showLoading();
+        this.inst().showLoading();
         Window.sendArrgmtRequest({
             'type': 'list',
-            'types': this.getContent().attr('data-types'),
-            'sort': this.getContent().attr('data-sort'),
-            'search': this.getContent().attr('data-search'),
-            'page': new_page,
+            'types': this.inst().#types,
+            'sort': this.inst().#sort,
+            'search': this.inst().#search,
+            'page': this.inst().#last_page,
         }, (data, status) => {
-            this.#populateTable(data, new_page);
-            this.hideLoading();
+            this.inst().#populateTable(data, new_page);
+            this.inst().hideLoading();
         }, (xhr, txt, error) => {
             window.alert('Could not load the arrangements!\n\n' +
                          'Error type: ' + txt + '/"' + error + '"/' + xhr.status);
-            this.hideLoading();
+            this.inst().hideLoading();
         });
 
         Window.stopPropagation(event);
@@ -2121,47 +2157,47 @@ class OpenArrangementWindow extends Window {
         let search = window.prompt('Please enter your search ' +
                                    'query for an arrangement name. Use regex.\n\n' +
                                    'To clear search later, click "Search" and leave ' +
-                                   'the field empty.', this.getContent().attr('data-search'));
+                                   'the field empty.', this.inst().#search);
 
         if (search == undefined) {
             return;
         }
 
         if (search == '') {
-            if (this.getContent().attr('data-search') != undefined) {
-                this.showLoading();
+            if (this.inst().#search != undefined) {
+                this.inst().showLoading();
                 Window.sendArrgmtRequest({
                     'type': 'list',
-                    'types': this.getContent().attr('data-types'),
-                    'sort': this.getContent().attr('data-sort')
+                    'types': this.inst().#types,
+                    'sort': this.inst().#sort
                 }, (data, status) => {
-                    this.getContent().removeAttr('data-search');
-                    this.#populateTable(data, 1);
-                    this.hideLoading();
+                    this.inst().#search = undefined;
+                    this.inst().#populateTable(data, 1);
+                    this.inst().hideLoading();
                 }, (xhr, txt, error) => {
                     window.alert('Could not load the arrangements!\n\n' +
                                  'Error type: ' + txt + '/"' + error + '"/' + xhr.status);
-                    this.hideLoading();
+                    this.inst().hideLoading();
                 });
             }
 
             return;
         }
 
-        this.showLoading();
+        this.inst().showLoading();
         Window.sendArrgmtRequest({
             'type': 'list',
-            'types': this.getContent().attr('data-types'),
-            'sort': this.getContent().attr('data-sort'),
+            'types': this.inst().#types,
+            'sort': this.inst().#sort,
             'search': search
         }, (data, status) => {
-            this.getContent().attr('data-search', search);
-            this.#populateTable(data, 1);
-            this.hideLoading();
+            this.inst().#search = search;
+            this.inst().#populateTable(data, 1);
+            this.inst().hideLoading();
         }, (xhr, txt, error) => {
             window.alert('Could not load the arrangements!\n\n' +
                          'Error type: ' + txt + '/"' + error + '"/' + xhr.status);
-            this.hideLoading();
+            this.inst().hideLoading();
         });
 
         Window.stopPropagation(event);
@@ -2170,25 +2206,25 @@ class OpenArrangementWindow extends Window {
     // Private, not meant to be called by any external code.
     onFilterClick(event) {
         let reload = types => {
-            this.showLoading();
+            this.inst().showLoading();
             Window.sendArrgmtRequest({
                 'type': 'list',
                 'types': types,
-                'sort': this.getContent().attr('data-sort'),
-                'search': this.getContent().attr('data-search')
+                'sort': this.inst().#sort,
+                'search': this.inst().#search
             }, (data, status) => {
-                this.getContent().attr('data-types', types);
-                this.#populateTable(data, 1);
-                this.hideLoading();
+                this.inst().#types = types;
+                this.inst().#populateTable(data, 1);
+                this.inst().hideLoading();
             }, (xhr, txt, error) => {
                 window.alert('Could not load the arrangements!\n\n' +
                              'Error type: ' + txt + '/"' + error + '"/' + xhr.status);
-                this.hideLoading();
+                this.inst().hideLoading();
             });
         };
 
         let make_bold_if_needed = (txt, val) => {
-            if (this.getContent().attr('data-types') == val) {
+            if (this.inst().#types == val) {
                 return '<b>' + txt + '</b>';
             } else {
                 return txt;
@@ -2221,33 +2257,33 @@ class OpenArrangementWindow extends Window {
     // Private, not meant to be called by any external code.
     onSortByClick(event) {
         let page = Number.parseInt(
-            this.getContent().find('.open_arrangement_cur_page_num').text());
+            this.inst().getContent().find('.open_arrangement_cur_page_num').text());
 
         if (isNaN(page)) {
             page = 1;
         }
 
         let reload = sort => {
-            this.showLoading();
+            this.inst().showLoading();
             Window.sendArrgmtRequest({
                 'type': 'list',
                 'sort': sort,
-                'types': this.getContent().attr('data-types'),
-                'search': this.getContent().attr('data-search'),
+                'types': this.inst().#types,
+                'search': this.inst().#search,
                 'page': page
             }, (data, status) => {
-                this.getContent().attr('data-sort', sort);
-                this.#populateTable(data, page);
-                this.hideLoading();
+                this.inst().#sort = sort;
+                this.inst().#populateTable(data, page);
+                this.inst().hideLoading();
             }, (xhr, txt, error) => {
                 window.alert('Could not load the arrangements!\n\n' +
                              'Error type: ' + txt + '/"' + error + '"/' + xhr.status);
-                this.hideLoading();
+                this.inst().hideLoading();
             });
         };
 
         let make_bold_if_needed = (txt, val) => {
-            if (this.getContent().attr('data-sort') == val) {
+            if (this.inst().#sort == val) {
                 return '<b>' + txt + '</b>';
             } else {
                 return txt;
@@ -2356,7 +2392,7 @@ class OpenArrangementWindow extends Window {
             return;
         }
 
-        this.showLoading();
+        this.inst().showLoading();
         Window.sendArrgmtRequest({
             'type': 'edit_name',
             'name': arrgmt.name,
@@ -2364,7 +2400,7 @@ class OpenArrangementWindow extends Window {
             'token': token
         }, (data, status) => {
             window.alert('The new name has just been saved!');
-            this.#reloadTable();
+            this.inst().#reloadTable();
         }, (xhr, txt, error) => {
             if (xhr.status === 403) {
                 window.alert('Invalid auth token!');
@@ -2377,7 +2413,7 @@ class OpenArrangementWindow extends Window {
                              '"/' + xhr.status);
             }
 
-            this.hideLoading();
+            this.inst().hideLoading();
         });
     }
 
@@ -2394,7 +2430,7 @@ class OpenArrangementWindow extends Window {
             return;
         }
 
-        this.showLoading();
+        this.inst().showLoading();
         Window.sendArrgmtRequest({
             'type': 'delete',
             'name': arrgmt.name,
@@ -2402,7 +2438,7 @@ class OpenArrangementWindow extends Window {
         }, (data, status) => {
             window.alert('The arrangement "' + arrgmt.name + '" ' +
                          'has just been deleted!');
-            this.#reloadTable();
+            this.inst().#reloadTable();
         }, (xhr, txt, error) => {
             if (xhr.status === 403) {
                 window.alert('Invalid auth token!');
@@ -2412,14 +2448,14 @@ class OpenArrangementWindow extends Window {
                              + '"/' + xhr.status);
             }
 
-            this.hideLoading();
+            this.inst().hideLoading();
         });
     }
 
     #reloadTable() {
-        this.showLoading();
+        this.inst().showLoading();
         let page = Number.parseInt(
-            this.getContent().find('.open_arrangement_cur_page_num').text());
+            this.inst().getContent().find('.open_arrangement_cur_page_num').text());
 
         if (isNaN(page)) {
             page = 1;
@@ -2427,82 +2463,85 @@ class OpenArrangementWindow extends Window {
 
         Window.sendArrgmtRequest({
             'type': 'list',
-            'sort': this.getContent().attr('data-sort'),
-            'types': this.getContent().attr('data-types'),
-            'search': this.getContent().attr('data-search'),
+            'sort': this.inst().#sort,
+            'types': this.inst().#types,
+            'search': this.inst().#search,
             'page': page
         }, (data, status) => {
-            this.#populateTable(data, page);
-            this.hideLoading();
+            this.inst().#populateTable(data, page);
+            this.inst().hideLoading();
         }, (xhr, txt, error) => {
             window.alert('Could not load the arrangements!\n\n' +
                          'Error type: ' + txt + '/"' + error + '"/' + xhr.status);
-            this.hideLoading();
+            this.inst().hideLoading();
         });
     }
 
     #populateTable(data, page) {
         let numf = new Intl.NumberFormat('en-US');
 
-        this.getContent().find('.open_arrangement_cur_page_num').text(
+        this.inst().getContent().find('.open_arrangement_cur_page_num').text(
             numf.format(page));
-        this.getContent().find('.open_arrangement_last_page_num').text(
+        this.inst().getContent().find('.open_arrangement_last_page_num').text(
             numf.format(data.general_total_pages));
-        this.getContent().find('.open_arrangement_cnt').text(
+        this.inst().getContent().find('.open_arrangement_cnt').text(
             numf.format(data.general_total_cnt));
 
-        if (page == 1) {
-            this.getContent().find('.open_arrangement_first_page').removeClass('pointer');
-            this.getContent().find('.open_arrangement_first_page').addClass('disabled');
-            this.getContent().find('.open_arrangement_first_page').attr('onclick', '');
+        this.inst().#page = page;
+        this.inst().#last_page = data.general_total_pages;
 
-            this.getContent().find('.open_arrangement_prev_page').removeClass('pointer');
-            this.getContent().find('.open_arrangement_prev_page').addClass('disabled');
-            this.getContent().find('.open_arrangement_prev_page').attr('onclick', '');
+        if (page == 1) {
+            this.inst().getContent().find('.open_arrangement_first_page').removeClass('pointer');
+            this.inst().getContent().find('.open_arrangement_first_page').addClass('disabled');
+            this.inst().getContent().find('.open_arrangement_first_page').attr('onclick', '');
+
+            this.inst().getContent().find('.open_arrangement_prev_page').removeClass('pointer');
+            this.inst().getContent().find('.open_arrangement_prev_page').addClass('disabled');
+            this.inst().getContent().find('.open_arrangement_prev_page').attr('onclick', '');
         } else {
-            this.getContent().find('.open_arrangement_first_page').removeClass('disabled');
-            this.getContent().find('.open_arrangement_first_page').addClass('pointer');
-            this.getContent().find(
+            this.inst().getContent().find('.open_arrangement_first_page').removeClass('disabled');
+            this.inst().getContent().find('.open_arrangement_first_page').addClass('pointer');
+            this.inst().getContent().find(
                 '.open_arrangement_first_page').attr('onclick',
-                                                     `Window.instances['${this.getId()}'].` +
+                                                     `Window.instances['${this.inst().getId()}'].` +
                                                      `onGoToFirstPageClick(event)`);
 
-            this.getContent().find('.open_arrangement_prev_page').removeClass('disabled');
-            this.getContent().find('.open_arrangement_prev_page').addClass('pointer');
-            this.getContent().find(
+            this.inst().getContent().find('.open_arrangement_prev_page').removeClass('disabled');
+            this.inst().getContent().find('.open_arrangement_prev_page').addClass('pointer');
+            this.inst().getContent().find(
                 '.open_arrangement_prev_page').attr('onclick',
-                                                    `Window.instances['${this.getId()}'].` +
+                                                    `Window.instances['${this.inst().getId()}'].` +
                                                     `onGoToPrevPageClick(event)`);
         }
 
         if (page == data.general_total_pages) {
-            this.getContent().find('.open_arrangement_last_page').removeClass('pointer');
-            this.getContent().find('.open_arrangement_last_page').addClass('disabled');
-            this.getContent().find('.open_arrangement_last_page').attr('onclick', '');
+            this.inst().getContent().find('.open_arrangement_last_page').removeClass('pointer');
+            this.inst().getContent().find('.open_arrangement_last_page').addClass('disabled');
+            this.inst().getContent().find('.open_arrangement_last_page').attr('onclick', '');
 
-            this.getContent().find('.open_arrangement_next_page').removeClass('pointer');
-            this.getContent().find('.open_arrangement_next_page').addClass('disabled');
-            this.getContent().find('.open_arrangement_next_page').attr('onclick', '');
+            this.inst().getContent().find('.open_arrangement_next_page').removeClass('pointer');
+            this.inst().getContent().find('.open_arrangement_next_page').addClass('disabled');
+            this.inst().getContent().find('.open_arrangement_next_page').attr('onclick', '');
         } else if (page > data.general_total_pages) {
             onGoToLastPageClick();
             return;
         } else {
-            this.getContent().find('.open_arrangement_last_page').removeClass('disabled');
-            this.getContent().find('.open_arrangement_last_page').addClass('pointer');
-            this.getContent().find(
+            this.inst().getContent().find('.open_arrangement_last_page').removeClass('disabled');
+            this.inst().getContent().find('.open_arrangement_last_page').addClass('pointer');
+            this.inst().getContent().find(
                 '.open_arrangement_last_page').attr('onclick',
-                                                    `Window.instances['${this.getId()}'].` +
+                                                    `Window.instances['${this.inst().getId()}'].` +
                                                     `onGoToLastPageClick(event)`);
 
-            this.getContent().find('.open_arrangement_next_page').removeClass('disabled');
-            this.getContent().find('.open_arrangement_next_page').addClass('pointer');
-            this.getContent().find(
+            this.inst().getContent().find('.open_arrangement_next_page').removeClass('disabled');
+            this.inst().getContent().find('.open_arrangement_next_page').addClass('pointer');
+            this.inst().getContent().find(
                 '.open_arrangement_next_page').attr('onclick',
-                                                    `Window.instances['${this.getId()}'].` +
+                                                    `Window.instances['${this.inst().getId()}'].` +
                                                     `onGoToNextPageClick(event)`);
         }
 
-        let table = this.getContent().find('.open_arrangement_table');
+        let table = this.inst().getContent().find('.open_arrangement_table');
         table.find('.open_arrangement_data_row').remove()
 
         for (const arrgmt of data.list) {
@@ -2515,16 +2554,16 @@ class OpenArrangementWindow extends Window {
                          `title="${type_title}">${arrgmt.type}</span></td>`));
             row.append($(`<td>${arrgmt.last_update}</td>`));
 
-            let toolbar = $(this.#getActionsToolbarCode());
+            let toolbar = $(this.inst().#getActionsToolbarCode());
 
             toolbar.find('.open_arrangement_get_link').click(event => {
-                this.onGetLinkClick(event, arrgmt);
+                this.inst().onGetLinkClick(event, arrgmt);
             });
             toolbar.find('.open_arrangement_edit_name').click(event => {
-                this.onEditNameClick(event, arrgmt);
+                this.inst().onEditNameClick(event, arrgmt);
             });
             toolbar.find('.open_arrangement_delete').click(event => {
-                this.onDeleteClick(event, arrgmt);
+                this.inst().onDeleteClick(event, arrgmt);
             });
 
             row.append(toolbar);
@@ -2537,14 +2576,14 @@ class OpenArrangementWindow extends Window {
         Window.sendArrgmtRequest({
             'type': 'list'
         }, (data, status) => {
-            this.getContent().attr('data-sort', 'last_update_desc');
-            this.getContent().attr('data-types', 'both');
-            this.#populateTable(data, 1);
-            this.hideLoading();
+            this.inst().#sort = 'last_update_desc';
+            this.inst().#types = 'both';
+            this.inst().#populateTable(data, 1);
+            this.inst().hideLoading();
         }, (xhr, txt, error) => {
             window.alert('Could not load the arrangements!\n\n' +
                          'Error type: ' + txt + '/"' + error + '"/' + xhr.status);
-            this.close();
+            this.inst().close();
         });
     }
 }
@@ -2761,7 +2800,7 @@ function loadCurrentSession(ready_handler) {
             if (ready_handler != undefined) {
                 ready_handler();
             }
-        }).fail(ajax_obj => {
+        }).fail((xhr, txt, error) => {
             $('#loading').hide();
 
             if (Window.isInCompactMode()) {
@@ -2769,12 +2808,12 @@ function loadCurrentSession(ready_handler) {
                 $('#footer').append($('#loading'));
             }
 
-            if (ajax_obj.status === 500) {
+            if (xhr.status === 500) {
                 $('#footer_text').html('<b><font color="red">Could not load the session because of an ' +
                                        'error on the server side!</font></b>');
             } else {
-                $('#footer_text').html('<b><font color="red">Could not load the session! (HTTP code ' +
-                                       ajax_obj.status + ')</font></b>');
+                $('#footer_text').html('<b><font color="red">Could not load the session! (error type: ' +
+                                       txt + '/"' + error + '"/' + xhr.status + ')</font></b>');
             }
 
             $('#footer_text').show();
