@@ -1801,6 +1801,36 @@ class LinkWindow extends Window {
 
     }
 
+    _exportData() {
+        return {
+            'compact': this.inst().getContent().find('.link_compact').prop('checked'),
+            'hide_header': this.inst().getContent().find('.link_hide_header').prop('checked'),
+            'hide_footer': this.inst().getContent().find('.link_hide_footer').prop('checked')
+        }
+    }
+
+    _importData(data) {
+        if (data.hide_header) {
+            this.inst().getContent().find('.link_hide_header').prop('checked', true);
+        } else {
+            this.inst().getContent().find('.link_hide_header').prop('checked', false);
+        }
+
+        if (data.hide_footer) {
+            this.inst().getContent().find('.link_hide_footer').prop('checked', true);
+        } else {
+            this.inst().getContent().find('.link_hide_footer').prop('checked', false);
+        }
+
+        if (data.compact) {
+            this.inst().getContent().find('.link_compact').prop('checked', true);
+        } else {
+            this.inst().getContent().find('.link_compact').prop('checked', false);
+        }
+
+        this.inst().getContent().find('.link_compact').trigger('change');
+    }
+
     _setup(data, existing_window) {
         let url_txt = './?';
 
@@ -2099,7 +2129,7 @@ class OpenArrangementWindow extends Window {
             'search': this.inst().#search,
             'page': this.inst().#page - 1,
         }, (data, status) => {
-            this.inst().#populateTable(data, new_page);
+            this.inst().#populateTable(data, this.inst().#page - 1);
             this.inst().hideLoading();
         }, (xhr, txt, error) => {
             window.alert('Could not load the arrangements!\n\n' +
@@ -2120,7 +2150,7 @@ class OpenArrangementWindow extends Window {
             'search': this.inst().#search,
             'page': this.inst().#page + 1,
         }, (data, status) => {
-            this.inst().#populateTable(data, new_page);
+            this.inst().#populateTable(data, this.inst().#page + 1);
             this.inst().hideLoading();
         }, (xhr, txt, error) => {
             window.alert('Could not load the arrangements!\n\n' +
@@ -2141,7 +2171,7 @@ class OpenArrangementWindow extends Window {
             'search': this.inst().#search,
             'page': this.inst().#last_page,
         }, (data, status) => {
-            this.inst().#populateTable(data, new_page);
+            this.inst().#populateTable(data, this.inst().#last_page);
             this.inst().hideLoading();
         }, (xhr, txt, error) => {
             window.alert('Could not load the arrangements!\n\n' +
@@ -2454,21 +2484,15 @@ class OpenArrangementWindow extends Window {
 
     #reloadTable() {
         this.inst().showLoading();
-        let page = Number.parseInt(
-            this.inst().getContent().find('.open_arrangement_cur_page_num').text());
-
-        if (isNaN(page)) {
-            page = 1;
-        }
 
         Window.sendArrgmtRequest({
             'type': 'list',
             'sort': this.inst().#sort,
             'types': this.inst().#types,
             'search': this.inst().#search,
-            'page': page
+            'page': this.inst().#page
         }, (data, status) => {
-            this.inst().#populateTable(data, page);
+            this.inst().#populateTable(data, this.inst().#page);
             this.inst().hideLoading();
         }, (xhr, txt, error) => {
             window.alert('Could not load the arrangements!\n\n' +
@@ -2523,7 +2547,7 @@ class OpenArrangementWindow extends Window {
             this.inst().getContent().find('.open_arrangement_next_page').addClass('disabled');
             this.inst().getContent().find('.open_arrangement_next_page').attr('onclick', '');
         } else if (page > data.general_total_pages) {
-            onGoToLastPageClick();
+            this.inst().onGoToLastPageClick();
             return;
         } else {
             this.inst().getContent().find('.open_arrangement_last_page').removeClass('disabled');
@@ -2570,6 +2594,24 @@ class OpenArrangementWindow extends Window {
 
             table.append(row);
         }
+    }
+
+    _exportData() {
+        return {
+            'types': this.inst().#types,
+            'sort': this.inst().#sort,
+            'search': this.inst().#search,
+            'page': this.inst().#page
+        };
+    }
+
+    _importData(data) {
+        this.inst().#types = data.types;
+        this.inst().#sort = data.sort;
+        this.inst().#search = data.search;
+        this.inst().#page = data.page;
+
+        this.inst().#reloadTable();
     }
 
     _setup(data, existing_window) {
@@ -3136,9 +3178,12 @@ $(document).ready(() => {
             } else if (xhr.status === 422) {
                 window.alert('The arrangement with ID ' + id +
                              ' refers to at least one performance ' +
-                             'analysis session which is not present!\n\n' +
-                             'The first performance analysis session found ' +
-                             'to be not present: ' + txt);
+                             'analysis session for which the fingerprint ' +
+                             'verification has failed! This means that the ' +
+                             'session is not present or has been tampered with.\n\n' +
+                             'The first arrangement session encountering ' +
+                             'this problem: ' +
+                             JSON.parse(xhr.responseText).session_invalid);
             } else {
                 window.alert('Could not load the arrangement with ID ' +
                              id + '!\n\n' +
