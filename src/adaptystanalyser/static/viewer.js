@@ -808,13 +808,15 @@ class Window {
                     "the session formally associated with the " +
                     "window/tab if any.\n\n" +
                     "The window/tab content is also saved if the content export is supported by a corresponding module.\n\n" +
-                    "What name would you like to give to your arrangement? It must not be empty.");
+                    "What name would you like to give to your arrangement? Leave it empty to get a random human-friendly name.");
         };
 
         let name = getName();
 
-        if (name == undefined || name === "") {
+        if (name == undefined) {
             return;
+        } else if (name === '') {
+            name = undefined;
         }
 
         this.#dom.find('.window_share').addClass('disabled');
@@ -881,6 +883,10 @@ class Window {
                 'name': name,
                 'data': JSON.stringify(arrangement)
             }, (data, status) => {
+                if (name == undefined) {
+                    name = data.name;
+                }
+
                 window.prompt('The arrangement "' + name + '" has been ' +
                               'saved successfully!\n\n' +
                               "Here's the auth token for changing the " +
@@ -2959,13 +2965,15 @@ function saveWindowArrangement() {
                 "A window arrangement is defined as your current session choice, the camera state of the system graph, " +
                 "and all of your windows/tabs " +
                 "along with their content if the content export is supported by a corresponding module.\n\n" +
-                "What name would you like to give to your arrangement? It must not be empty.");
+                "What name would you like to give to your arrangement? Leave it empty to get a random human-friendly name.");
     };
 
     let name = getName();
 
-    if (name == undefined || name === "") {
+    if (name == undefined) {
         return;
+    } else if (name === '') {
+        name = undefined;
     }
 
     $('#share').removeClass('pointer');
@@ -3015,6 +3023,10 @@ function saveWindowArrangement() {
             'name': name,
             'data': JSON.stringify(arrangement)
         }, (data, status) => {
+            if (name == undefined) {
+                name = data.name;
+            }
+
             window.prompt('The arrangement "' + name + '" has been ' +
                           'saved successfully!\n\n' +
                           "Here's the auth token for changing the " +
